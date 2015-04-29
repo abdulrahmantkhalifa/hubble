@@ -4,14 +4,14 @@ initial poc for some networking tricks
 ![example](https://docs.google.com/drawings/d/1JyMhktMNzaOeIgbkAcNK7DdkV0M17eKoYzw1yxwCOlQ/pub?w=960&h=720)
 click [here](https://docs.google.com/drawings/d/1JyMhktMNzaOeIgbkAcNK7DdkV0M17eKoYzw1yxwCOlQ/edit?usp=sharing) to edit picture
 
-212.3.247.26:80 -> ends at rest app server on port 80
-212.3.247.26:9000 -> ends at redis 1 on port 9000
-212.4.1.1:80 -> ends at rest app server on port 80
-212.4.1.1:9000 -> ends at redis 1 on port 9000
-192.168.2.1:9000 -> ends at redis 1 on port 9000
-192.168.2.1:80 -> ends at app server on port 80
-192.168.1.10:9001 -> ends at redis 2 on port 9000
-192.168.1.10:3306 -> ends at mysql1 on port 3306
+* 212.3.247.26:80 -> ends at rest app server on port 80
+* 212.3.247.26:9000 -> ends at redis 1 on port 9000
+* 212.4.1.1:80 -> ends at rest app server on port 80
+* 212.4.1.1:9000 -> ends at redis 1 on port 9000
+* 192.168.2.1:9000 -> ends at redis 1 on port 9000
+* 192.168.2.1:80 -> ends at app server on port 80
+* 192.168.1.10:9001 -> ends at redis 2 on port 9000
+* 192.168.1.10:3306 -> ends at mysql1 on port 3306
 
 features
 --------
