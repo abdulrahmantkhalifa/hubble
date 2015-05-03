@@ -2,7 +2,7 @@ initial poc for some networking tricks
 ======================================
 
 ![example](https://docs.google.com/drawings/d/1CkCJhaFLX4KoU2_Ay1MpRGey4MzjTqcb8oqxPp1LYvg/pub?w=960&h=720)
-click [here](hhttps://docs.google.com/drawings/d/1CkCJhaFLX4KoU2_Ay1MpRGey4MzjTqcb8oqxPp1LYvg/edit) to edit picture
+click [here](https://docs.google.com/drawings/d/1CkCJhaFLX4KoU2_Ay1MpRGey4MzjTqcb8oqxPp1LYvg/edit) to edit picture
 
 this is an example where we ask the gw to connect 2 tcp ports
 so the python api client can talk to the remote server and both are behind NAT.
