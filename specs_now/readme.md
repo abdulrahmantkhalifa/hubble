@@ -80,4 +80,10 @@ Gateway is responsible for dispatching the traffic to the correct agent. Also is
 can make connections.
 
 ## Protocol
-TODO
+### Initiator packet
+Initiator packet is used when an agent is trying to start a connection to a remote service. The guid is the connection ID which is picked by the 
+agent itself and will be used later to track the connection.
+
+![Initiator packet](https://docs.google.com/drawings/d/1tzswzSQro52J9zFu63LPkilOyv9knamDlWDrCx9OIps/pub?w=960&h=720)
+### Data packet
+**TODO**
