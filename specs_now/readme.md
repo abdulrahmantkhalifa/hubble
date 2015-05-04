@@ -71,9 +71,13 @@ Agent, when started it will connect to the configured proxy server over websocke
  ```
 
 - The agent should provide a RestAPI to dynamically open and close forwardings.
-- Internally, the agent must keep track of the connected sockets so it can route the received traffic back the correct socket.
+- Internally, the agent must keep track of the connected sockets so it can route the received traffic back to the correct socket.
 
 Agents also are used as the entry point for internal services, so when agent receives a new connection to an internal server, the server is first checked agains a white list to see if connection to this service is allowed, and if yes, the connection is establised and traffic is routed to the other end as desciped above.
+
+### Gateway
+Gateway is responsible for dispatching the traffic to the correct agent. Also is responsible for managing authentication/authorization so only allowed gateways
+can make connections.
 
 ## Protocol
 TODO
