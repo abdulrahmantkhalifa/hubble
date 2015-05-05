@@ -80,10 +80,16 @@ Gateway is responsible for dispatching the traffic to the correct agent. Also is
 can make connections.
 
 ## Protocol
-### Initiator packet
+Descript onwire protocols for communication between agents and the proxy server
+
+### Data protocol
+#### Initiator packet
 Initiator packet is used when an agent is trying to start a connection to a remote service. The guid is the connection ID which is picked by the 
 agent itself and will be used later to track the connection.
 
 ![Initiator packet](https://docs.google.com/drawings/d/1tzswzSQro52J9zFu63LPkilOyv9knamDlWDrCx9OIps/pub?w=960&h=720)
-### Data packet
-**TODO**
+#### Data packet
+
+After initializing connection, all the following packets should be data packets structured as follows.
+![Data packet](https://docs.google.com/drawings/d/1uIXPssx7Q0N4fh1lI-StVzFOHL7m9gasKeRTrTLXODQ/pub?w=959&h=360)
+
