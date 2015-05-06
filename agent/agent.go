@@ -3,7 +3,6 @@ package main
 
 import (
 	"hubble"
-	"hubble/agent"
 	"fmt"
 	"log"
 	"net"
@@ -40,27 +39,37 @@ func ServiceTunnel(tunnel *hubble.Tunnel) {
 	}
 }
 
+//Wrapper for handshake
+func Handshake(conn *hubble.ProxyConnection, agentname string, key string) error {
+	message := hubble.HandshakeMessage {
+		Name: agentname,
+		Key: key,
+	}
+
+	return conn.Send(hubble.HANDSHAKE_MESSAGE_TYPE, &message)
+}
+
 func main() {
-	conn, err := agent.NewProxyConnection("ws://localhost:8080/")
+	conn, err := hubble.NewProxyConnection("ws://localhost:8080/")
 	if err != nil {
 		log.Fatal("Failed to connect to proxy", err)
 	}
 	
-	conn.Initialize("gw1", "password")
+	Handshake(conn, "gw1", "password")
 	// ws.WriteMessage(websocket.TextMessage, []byte("Hello Proxy"))
 
-	tunnels := []hubble.Tunnel {
-		//tunnel to ssh(22)  proxy->gw1->127.0.0.1
-		{Gateway: "gw1",
-		 Ip: net.ParseIP("127.0.0.1"),
-		 Local: 2015,
-		 Remote: 22},
-	}
+	// tunnels := []hubble.Tunnel {
+	// 	//tunnel to ssh(22)  proxy->gw1->127.0.0.1
+	// 	{Gateway: "gw1",
+	// 	 Ip: net.ParseIP("127.0.0.1"),
+	// 	 Local: 2015,
+	// 	 Remote: 22},
+	// }
 
-	for _, tunnel := range tunnels {
-		go ServiceTunnel(&tunnel)
-	}
+	// for _, tunnel := range tunnels {
+	// 	go ServiceTunnel(&tunnel)
+	// }
 
-	//wait forever
+	// //wait forever
 	select {}
 }

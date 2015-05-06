@@ -20,10 +20,15 @@ type Session struct {
 const HANDSHAKE_MESSAGE_TYPE uint8 = 1
 const INITIATOR_MESSAGE_TYPE uint8 = 2
 const DATA_MESSAGE_TYPE uint8 = 3
+const ERROR_MESSAGE_TYPE uint8 = 255
 
 type HandshakeMessage struct {
 	Name string
 	Key string
+}
+
+type ErrorMessage struct {
+	Error string
 }
 
 type InitiatorMessage struct {
@@ -44,5 +49,8 @@ var MessageTypes = map[uint8]func() interface{} {
 	},
 	DATA_MESSAGE_TYPE: func() interface{} {
 		return new(DataMessage)
+	},
+	ERROR_MESSAGE_TYPE: func() interface{} {
+		return new(ErrorMessage)
 	},
 }

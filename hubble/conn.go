@@ -1,9 +1,9 @@
-package agent
+package hubble
 
 import (
-	"hubble"
 	"net/url"
 	"net"
+	"errors"
 	"github.com/gorilla/websocket"
 )
 
@@ -31,6 +31,14 @@ func NewProxyConnection(proxyUrl string) (*ProxyConnection, error) {
 	return connection, nil
 }
 
+func NewConnection(ws *websocket.Conn) *ProxyConnection {
+	var connection = ProxyConnection {
+		ws: ws,
+	}
+
+	return &connection
+}
+
 
 func (conn *ProxyConnection) Send(mtype uint8, message interface{}) error {
 	writer, err := conn.ws.NextWriter(websocket.BinaryMessage)
@@ -39,15 +47,23 @@ func (conn *ProxyConnection) Send(mtype uint8, message interface{}) error {
 		return err
 	}
 
-	return hubble.Dumps(writer, mtype, message)
+	return Dumps(writer, mtype, message)
 }
 
-//Wrapper for handshake
-func (conn *ProxyConnection) Initialize(agentname string, key string) error {
-	message := hubble.HandshakeMessage {
-		Name: agentname,
-		Key: key,
+func (conn *ProxyConnection) Receive() (uint8, interface{}, error) {
+	mode, reader, err := conn.ws.NextReader()
+	if err != nil {
+		return 0, nil, err
 	}
 
-	return conn.Send(hubble.HANDSHAKE_MESSAGE_TYPE, &message)
+	if mode != websocket.BinaryMessage {
+		//only binary messages are supported.
+		return 0, nil, errors.New("Only binary messages are supported")
+	}
+
+	return Loads(reader)
+}
+
+func (conn *ProxyConnection) Close() error {
+	return conn.ws.Close()
 }
