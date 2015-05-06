@@ -60,6 +60,7 @@ Agent, when started it will connect to the configured proxy server over websocke
 - Authentication, only authenticated gateways will proceed to the active state, otherwise a decent error message will be reported back to the agent and connection will be terminated.
 - Registration, The **Agent** will identify it's usable name (agentname), The agent name must be unique. The agentname will be used by other agents when forwarding connections.
 - When the registration process is complete, the agent can now proceed with opening the local ports which maps to remote services. A typical port forwarding configuration has the following structure:
+
 ```javascript
  {
  	local: 'local port number',
@@ -68,10 +69,27 @@ Agent, when started it will connect to the configured proxy server over websocke
  	remote: 'remote port number'
  }
  ```
--- The agent should provide a RestAPI to dynamically open and close forwardings.
-- Internally, the agent must keep track of the connected sockets so it can route the received traffic back the correct socket.
+
+- The agent should provide a RestAPI to dynamically open and close forwardings.
+- Internally, the agent must keep track of the connected sockets so it can route the received traffic back to the correct socket.
 
 Agents also are used as the entry point for internal services, so when agent receives a new connection to an internal server, the server is first checked agains a white list to see if connection to this service is allowed, and if yes, the connection is establised and traffic is routed to the other end as desciped above.
 
+### Gateway
+Gateway is responsible for dispatching the traffic to the correct agent. Also is responsible for managing authentication/authorization so only allowed gateways
+can make connections.
+
 ## Protocol
-TODO
+Descript onwire protocols for communication between agents and the proxy server
+
+### Data protocol
+#### Initiator packet
+Initiator packet is used when an agent is trying to start a connection to a remote service. The guid is the connection ID which is picked by the 
+agent itself and will be used later to track the connection.
+
+![Initiator packet](https://docs.google.com/drawings/d/1tzswzSQro52J9zFu63LPkilOyv9knamDlWDrCx9OIps/pub?w=960&h=720)
+#### Data packet
+
+After initializing connection, all the following packets should be data packets structured as follows.
+![Data packet](https://docs.google.com/drawings/d/1uIXPssx7Q0N4fh1lI-StVzFOHL7m9gasKeRTrTLXODQ/pub?w=959&h=360)
+
