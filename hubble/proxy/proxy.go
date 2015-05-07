@@ -29,28 +29,18 @@ var gateways = make(map[string]*Gateway)
 
 func register(gateway *Gateway) error {
 	//1- Authentication
+	//TODO:
+
+	//2- Registration
 	log.Println(fmt.Sprintf("Registering gateway: %v", gateway.handshake.Name))
 	gateways[gateway.handshake.Name] = gateway
+	
 	return nil
 }
 
 func unregister(gateway *Gateway) {
 	log.Println(fmt.Sprintf("Unegistering gateway: %v", gateway.handshake.Name))
 	delete(gateways, gateway.handshake.Name)
-}
-
-func readNextMessage(conn *websocket.Conn) (uint8, interface{}, error) {
-	mode, reader, err := conn.NextReader()
-	if err != nil {
-		return 0, nil, err
-	}
-
-	if mode != websocket.BinaryMessage {
-		//only binary messages are supported.
-		return 0, nil, errors.New("Only binary messages are supported")
-	}
-
-	return hubble.Loads(reader)
 }
 
 func handler(ws *websocket.Conn, request *http.Request) {
@@ -78,8 +68,18 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	}
 
 	err = register(&gateway)
-	//if registration went fine, proceed with reading the rest of the messages.
-	//else we should send a proper error message to agent.
+	ack := hubble.AckMessage {
+		Ok: err == nil,
+		Message: fmt.Sprintf("%v", err),
+	}
+
+	log.Println(ack)
+	conn.Send(hubble.ACK_MESSAGE_TYPE, ack)
+	
+	if err != nil {
+		return
+	}
+
 	defer unregister(&gateway)
 
 	//Read loop

@@ -9,7 +9,7 @@ import (
 var msgHandle = new(codec.MsgpackHandle)
 
 //Dumps a message to writer. flag it with the given type
-func Dumps(writer io.Writer, mtype uint8, message interface{}) error {
+func dumps(writer io.Writer, mtype uint8, message interface{}) error {
 	//send type byte.
 	writer.Write([]byte{mtype})
 
@@ -19,7 +19,7 @@ func Dumps(writer io.Writer, mtype uint8, message interface{}) error {
 }
 
 //Loads a message from a reader, assuming first byte is the message types.
-func Loads(reader io.Reader) (uint8, interface{}, error) {
+func loads(reader io.Reader) (uint8, interface{}, error) {
 	var mtype = make([]byte, 1)
 	_, err := reader.Read(mtype)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"errors"
 )
 
 // func handle(conn net.Conn) {
@@ -46,7 +47,23 @@ func Handshake(conn *hubble.ProxyConnection, agentname string, key string) error
 		Key: key,
 	}
 
-	return conn.Send(hubble.HANDSHAKE_MESSAGE_TYPE, &message)
+	err := conn.Send(hubble.HANDSHAKE_MESSAGE_TYPE, &message)
+	if err != nil {
+		return err
+	}
+
+	//read ack.
+	mtype, reply, err := conn.Receive()
+	if mtype != hubble.ACK_MESSAGE_TYPE {
+		return errors.New(fmt.Sprintf("Expecting ack message, got %v", mtype))
+	}
+
+	ack := reply.(*hubble.AckMessage)
+	if !ack.Ok {
+		return errors.New(ack.Message)
+	}
+
+	return nil
 }
 
 func main() {
@@ -55,9 +72,13 @@ func main() {
 		log.Fatal("Failed to connect to proxy", err)
 	}
 	
-	Handshake(conn, "gw1", "password")
-	// ws.WriteMessage(websocket.TextMessage, []byte("Hello Proxy"))
+	err = Handshake(conn, "gw1", "password")
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	//send initiator message
+	
 	// tunnels := []hubble.Tunnel {
 	// 	//tunnel to ssh(22)  proxy->gw1->127.0.0.1
 	// 	{Gateway: "gw1",
