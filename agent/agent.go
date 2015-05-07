@@ -6,18 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"errors"
 )
-
-// func handle(conn net.Conn) {
-// 	var ssh_conn, err = net.Dial("tcp", "localhost:22")
-// 	if err != nil {
-// 		log.Printf("Failed to connect to ssh service: %v", err)
-// 	}
-
-// 	go netwpoc.Pipe(conn, ssh_conn)
-// }
-
 
 func ServiceTunnel(tunnel *hubble.Tunnel) {
 	// open socket and wait for connections
@@ -41,7 +30,7 @@ func ServiceTunnel(tunnel *hubble.Tunnel) {
 }
 
 //Wrapper for handshake
-func Handshake(conn *hubble.ProxyConnection, agentname string, key string) error {
+func Handshake(conn *hubble.Connection, agentname string, key string) error {
 	message := hubble.HandshakeMessage {
 		Name: agentname,
 		Key: key,
@@ -53,14 +42,9 @@ func Handshake(conn *hubble.ProxyConnection, agentname string, key string) error
 	}
 
 	//read ack.
-	mtype, reply, err := conn.Receive()
-	if mtype != hubble.ACK_MESSAGE_TYPE {
-		return errors.New(fmt.Sprintf("Expecting ack message, got %v", mtype))
-	}
-
-	ack := reply.(*hubble.AckMessage)
-	if !ack.Ok {
-		return errors.New(ack.Message)
+	err = conn.ReceiveAck()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -78,7 +62,19 @@ func main() {
 	}
 
 	//send initiator message
-	
+
+	err = conn.Send(hubble.INITIATOR_MESSAGE_TYPE, &hubble.InitiatorMessage{
+		GUID: "First Session",
+		Ip: net.ParseIP("172.0.0.1"),
+		Port: 22,
+		Gatename: "gw1",
+	})
+
+	err = conn.ReceiveAck()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// tunnels := []hubble.Tunnel {
 	// 	//tunnel to ssh(22)  proxy->gw1->127.0.0.1
 	// 	{Gateway: "gw1",

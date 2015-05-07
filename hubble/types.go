@@ -2,6 +2,7 @@ package hubble
 
 import (
 	"net"
+	"fmt"
 )
 
 type Tunnel struct {
@@ -20,6 +21,8 @@ type Session struct {
 const HANDSHAKE_MESSAGE_TYPE uint8 = 1
 const INITIATOR_MESSAGE_TYPE uint8 = 2
 const DATA_MESSAGE_TYPE uint8 = 3
+const TERMINATOR_MESSAGE_TYPE uint8 = 4
+
 const ACK_MESSAGE_TYPE uint8 = 255
 
 type HandshakeMessage struct {
@@ -39,9 +42,17 @@ type DataMessage struct {
 	Data []byte
 }
 
+type TerminatorMessage struct {
+	GUID string
+}
+
 type AckMessage struct {
 	Ok bool
 	Message string
+}
+
+func (msg *InitiatorMessage) String() string {
+	return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.Ip, msg.Port, msg.GUID)
 }
 
 var MessageTypes = map[uint8]func() interface{} {
@@ -53,6 +64,9 @@ var MessageTypes = map[uint8]func() interface{} {
 	},
 	DATA_MESSAGE_TYPE: func() interface{} {
 		return new(DataMessage)
+	},
+	TERMINATOR_MESSAGE_TYPE: func() interface{} {
+		return new(TerminatorMessage)
 	},
 	ACK_MESSAGE_TYPE: func() interface{} {
 		return new(AckMessage)

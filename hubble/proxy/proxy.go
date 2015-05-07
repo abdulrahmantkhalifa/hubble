@@ -4,7 +4,6 @@ import (
 	"hubble"
 	"log"
 	"fmt"
-	"errors"
 	"net/http"
 	"github.com/gorilla/websocket"
 )
@@ -15,33 +14,6 @@ var upgrader = websocket.Upgrader {
     CheckOrigin: func(request *http.Request) bool { return true },
 }
 
-var unauthenticated = errors.New("Unauthenticated")
-var unauthorized = errors.New("Unauthorized")
-
-
-type Gateway struct {
-	handshake *hubble.HandshakeMessage
-	connection *hubble.ProxyConnection
-}
-
-var gateways = make(map[string]*Gateway)
-
-
-func register(gateway *Gateway) error {
-	//1- Authentication
-	//TODO:
-
-	//2- Registration
-	log.Println(fmt.Sprintf("Registering gateway: %v", gateway.handshake.Name))
-	gateways[gateway.handshake.Name] = gateway
-	
-	return nil
-}
-
-func unregister(gateway *Gateway) {
-	log.Println(fmt.Sprintf("Unegistering gateway: %v", gateway.handshake.Name))
-	delete(gateways, gateway.handshake.Name)
-}
 
 func handler(ws *websocket.Conn, request *http.Request) {
 	conn := hubble.NewConnection(ws)
@@ -62,25 +34,16 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 	handshake := message.(*hubble.HandshakeMessage)
 
-	var gateway = Gateway{
-		handshake: handshake,
-		connection: conn,
-	}
+	gw := newGateway(conn, handshake)
 
-	err = register(&gateway)
-	ack := hubble.AckMessage {
-		Ok: err == nil,
-		Message: fmt.Sprintf("%v", err),
-	}
-
-	log.Println(ack)
-	conn.Send(hubble.ACK_MESSAGE_TYPE, ack)
+	err = gw.register()
+	conn.SendAckOrError(err)
 	
 	if err != nil {
 		return
 	}
 
-	defer unregister(&gateway)
+	defer gw.unregister()
 
 	//Read loop
 	for {
@@ -88,10 +51,14 @@ func handler(ws *websocket.Conn, request *http.Request) {
 		if err != nil {
 			break
 		}
-		// switch mtype {
-		// 	case hubble.INITIATOR_MESSAGE_TYPE
-		// }
-		log.Println(mtype, message, err)
+		
+		switch mtype {
+			case hubble.INITIATOR_MESSAGE_TYPE:
+				initiator := message.(*hubble.InitiatorMessage)
+				log.Println("New Session", initiator)
+				err := gw.openSession(initiator)
+				conn.SendAckOrError(err)
+		}
 	}
 }
 //The http handler for the websockets
