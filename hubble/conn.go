@@ -47,7 +47,12 @@ func (conn *ProxyConnection) Send(mtype uint8, header interface{}) error {
 		return err
 	}
 
-	return Dumps(writer, mtype, header)
+	err = dumps(writer, mtype, 0, header)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (conn *ProxyConnection) Receive() (uint8, interface{}, error) {
@@ -61,7 +66,8 @@ func (conn *ProxyConnection) Receive() (uint8, interface{}, error) {
 		return 0, nil, errors.New("Only binary messages are supported")
 	}
 
-	return Loads(reader)
+	mtype, _, header, err := loads(reader)
+	return mtype, header, err
 }
 
 func (conn *ProxyConnection) Close() error {
