@@ -5,19 +5,6 @@ import (
 	"fmt"
 )
 
-type Tunnel struct {
-	Local uint16
-	Ip net.IP
-	Remote uint16
-	Gateway string
-}
-
-type Session struct {
-	tunnel *Tunnel
-	guid [16]byte
-}
-
-
 const HANDSHAKE_MESSAGE_TYPE uint8 = 1
 const INITIATOR_MESSAGE_TYPE uint8 = 2
 const DATA_MESSAGE_TYPE uint8 = 3

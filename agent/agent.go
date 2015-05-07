@@ -3,90 +3,82 @@ package main
 
 import (
 	"hubble"
-	"fmt"
+	"hubble/agent"
 	"log"
 	"net"
+	"flag"
+	"regexp"
+	"strconv"
 )
 
-func ServiceTunnel(tunnel *hubble.Tunnel) {
-	// open socket and wait for connections
-	listner, err := net.Listen("tcp", fmt.Sprintf(":%d", tunnel.Local))
-	defer listner.Close()
-
-	if err != nil {
-		log.Printf("Failed to listing on port: %v", err)
-		return
-	}
-
-	for {
-		conn, err := listner.Accept()
-		if err != nil {
-			log.Printf("accept socket error: %v", err)
-			conn.Close()
-		}
-
-		//go handle(conn)
-	}
-}
-
-//Wrapper for handshake
-func Handshake(conn *hubble.Connection, agentname string, key string) error {
-	message := hubble.HandshakeMessage {
-		Name: agentname,
-		Key: key,
-	}
-
-	err := conn.Send(hubble.HANDSHAKE_MESSAGE_TYPE, &message)
-	if err != nil {
-		return err
-	}
-
-	//read ack.
-	err = conn.ReceiveAck()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func main() {
-	conn, err := hubble.NewProxyConnection("ws://localhost:8080/")
+	var url string
+	var name string
+	var key string
+
+	flag.StringVar(&url, "url", "", "WebSocket url to proxy server in form 'ws://host:port/path")
+	flag.StringVar(&name, "name", "", "Agent name, will be used by other agents to redirect connections to this agent")
+	flag.StringVar(&key, "key", "", "Agent key")
+	flag.Parse()
+
+	tunnels_def := flag.Args()
+	tunnels := make([]*agent.Tunnel, 0)
+
+	//tunnel is defined as lport:gw:ip:port
+	re := regexp.MustCompile("(\\d+):([^:]+):([^:]+):(\\d+)")
+
+	for _, tunnel_def := range tunnels_def {
+		match := re.FindStringSubmatch(tunnel_def)
+		ip := net.ParseIP(match[3])
+		if ip == nil {
+			log.Fatalf("Invalid ip address %v", match[3])
+		}
+
+		local, err := strconv.ParseUint(match[1], 10, 16)
+		if err != nil {
+			log.Fatalf("Invalid port %v", match[1])
+		}
+
+		remote, err := strconv.ParseUint(match[4], 10, 16)
+		if err != nil {
+			log.Fatalf("Invalid port %v", match[4])
+		}
+		tunnel := agent.NewTunnel(uint16(local), match[2], ip, uint16(remote))
+		tunnels = append(tunnels, tunnel)
+	}
+
+	if url == "" {
+		flag.PrintDefaults()
+		log.Fatal("Missing url")
+	}
+
+	if name == "" {
+		flag.PrintDefaults()
+		log.Fatal("Missing name")
+	}
+
+	// if key == "" {
+	// 	flag.PrintDefaults()
+	// 	log.Fatal("Missing key")
+	// }
+
+	//1- intialize connection to proxy
+	conn, err := hubble.NewProxyConnection(url)
 	if err != nil {
 		log.Fatal("Failed to connect to proxy", err)
 	}
 	
-	err = Handshake(conn, "gw1", "password")
+	//2- registration
+	err = agent.Handshake(conn, name, key)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//send initiator message
-
-	err = conn.Send(hubble.INITIATOR_MESSAGE_TYPE, &hubble.InitiatorMessage{
-		GUID: "First Session",
-		Ip: net.ParseIP("172.0.0.1"),
-		Port: 22,
-		Gatename: "gw1",
-	})
-
-	err = conn.ReceiveAck()
-	if err != nil {
-		log.Fatal(err)
+	for _, tunnel := range tunnels {
+		tunnel.Serve(conn)
 	}
 
-	// tunnels := []hubble.Tunnel {
-	// 	//tunnel to ssh(22)  proxy->gw1->127.0.0.1
-	// 	{Gateway: "gw1",
-	// 	 Ip: net.ParseIP("127.0.0.1"),
-	// 	 Local: 2015,
-	// 	 Remote: 22},
-	// }
-
-	// for _, tunnel := range tunnels {
-	// 	go ServiceTunnel(&tunnel)
-	// }
-
-	// //wait forever
+	//wait forever
 	select {}
 }
