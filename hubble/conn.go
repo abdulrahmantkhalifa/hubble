@@ -40,14 +40,14 @@ func NewConnection(ws *websocket.Conn) *ProxyConnection {
 }
 
 
-func (conn *ProxyConnection) Send(mtype uint8, message interface{}) error {
+func (conn *ProxyConnection) Send(mtype uint8, header interface{}) error {
 	writer, err := conn.ws.NextWriter(websocket.BinaryMessage)
 	defer writer.Close()
 	if err != nil {
 		return err
 	}
 
-	return Dumps(writer, mtype, message)
+	return Dumps(writer, mtype, header)
 }
 
 func (conn *ProxyConnection) Receive() (uint8, interface{}, error) {

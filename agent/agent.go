@@ -41,12 +41,12 @@ func ServiceTunnel(tunnel *hubble.Tunnel) {
 
 //Wrapper for handshake
 func Handshake(conn *hubble.ProxyConnection, agentname string, key string) error {
-	message := hubble.HandshakeMessage {
+	message := hubble.HandshakeMessageHeader {
 		Name: agentname,
 		Key: key,
 	}
 
-	return conn.Send(hubble.HANDSHAKE_MESSAGE_TYPE, &message)
+	return conn.Send(hubble.HANDSHAKE_MESSAGE_HEADER_TYPE, &message)
 }
 
 func main() {

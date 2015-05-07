@@ -17,40 +17,51 @@ type Session struct {
 }
 
 
-const HANDSHAKE_MESSAGE_TYPE uint8 = 1
-const INITIATOR_MESSAGE_TYPE uint8 = 2
-const DATA_MESSAGE_TYPE uint8 = 3
-const ERROR_MESSAGE_TYPE uint8 = 255
+const HANDSHAKE_MESSAGE_HEADER_TYPE uint8 = 1
+const INITIATOR_MESSAGE_HEADER_TYPE uint8 = 2
+const DATA_MESSAGE_HEADER_TYPE uint8 = 3
 
-type HandshakeMessage struct {
+const ACK_MESSAGE_HEADER_TYPE uint8 = 254
+const ERROR_MESSAGE_HEADER_TYPE uint8 = 255
+
+
+type HandshakeMessageHeader struct {
 	Name string
 	Key string
 }
 
-type ErrorMessage struct {
+type InitiatorMessageHeader struct {
+
+}
+
+type DataMessageHeader struct {
+
+}
+
+type ErrorMessageHeader struct {
 	Error string
 }
 
-type InitiatorMessage struct {
+type AckMessageHeader struct {
 
 }
 
-type DataMessage struct {
-
-}
-
-
-var MessageTypes = map[uint8]func() interface{} {
-	HANDSHAKE_MESSAGE_TYPE: func() interface{} {
-		return new(HandshakeMessage)
+var MessageHeaderTypes = map[uint8]func() interface{} {
+	HANDSHAKE_MESSAGE_HEADER_TYPE: func() interface{} {
+		return new(HandshakeMessageHeader)
 	},
-	INITIATOR_MESSAGE_TYPE: func() interface{} {
-		return new(InitiatorMessage)
+	INITIATOR_MESSAGE_HEADER_TYPE: func() interface{} {
+		return new(InitiatorMessageHeader)
 	},
-	DATA_MESSAGE_TYPE: func() interface{} {
-		return new(DataMessage)
+	DATA_MESSAGE_HEADER_TYPE: func() interface{} {
+		return new(DataMessageHeader)
 	},
-	ERROR_MESSAGE_TYPE: func() interface{} {
-		return new(ErrorMessage)
+
+
+	ACK_MESSAGE_HEADER_TYPE: func() interface{} {
+		return new(AckMessageHeader)
+	},
+	ERROR_MESSAGE_HEADER_TYPE: func() interface{} {
+		return new(ErrorMessageHeader)
 	},
 }

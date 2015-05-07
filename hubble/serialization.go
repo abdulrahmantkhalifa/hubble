@@ -26,7 +26,7 @@ func Loads(reader io.Reader) (uint8, interface{}, error) {
 		return 0, nil, err
 	}
 
-	initiator, ok := MessageTypes[mtype[0]]
+	initiator, ok := MessageHeaderTypes[mtype[0]]
 	if !ok {
 		return mtype[0], nil, errors.New("Invalid mtype")
 	}

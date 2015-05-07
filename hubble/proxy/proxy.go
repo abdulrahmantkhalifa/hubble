@@ -20,7 +20,7 @@ var unauthorized = errors.New("Unauthorized")
 
 
 type Gateway struct {
-	handshake *hubble.HandshakeMessage
+	handshake *hubble.HandshakeMessageHeader
 	connection *hubble.ProxyConnection
 }
 
@@ -65,12 +65,12 @@ func handler(ws *websocket.Conn, request *http.Request) {
 		return
 	}
 
-	if mtype != hubble.HANDSHAKE_MESSAGE_TYPE {
+	if mtype != hubble.HANDSHAKE_MESSAGE_HEADER_TYPE {
 		log.Println(fmt.Sprintf("Expecting handshake message, got %v", mtype))
 		return
 	}
 
-	handshake := message.(*hubble.HandshakeMessage)
+	handshake := message.(*hubble.HandshakeMessageHeader)
 
 	var gateway = Gateway{
 		handshake: handshake,
