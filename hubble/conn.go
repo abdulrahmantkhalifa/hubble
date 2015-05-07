@@ -40,19 +40,14 @@ func NewConnection(ws *websocket.Conn) *ProxyConnection {
 }
 
 
-func (conn *ProxyConnection) Send(mtype uint8, header interface{}) error {
+func (conn *ProxyConnection) Send(mtype uint8, message interface{}) error {
 	writer, err := conn.ws.NextWriter(websocket.BinaryMessage)
 	defer writer.Close()
 	if err != nil {
 		return err
 	}
 
-	err = dumps(writer, mtype, 0, header)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return Dumps(writer, mtype, message)
 }
 
 func (conn *ProxyConnection) Receive() (uint8, interface{}, error) {
@@ -66,8 +61,7 @@ func (conn *ProxyConnection) Receive() (uint8, interface{}, error) {
 		return 0, nil, errors.New("Only binary messages are supported")
 	}
 
-	mtype, _, header, err := loads(reader)
-	return mtype, header, err
+	return Loads(reader)
 }
 
 func (conn *ProxyConnection) Close() error {

@@ -20,7 +20,7 @@ var unauthorized = errors.New("Unauthorized")
 
 
 type Gateway struct {
-	handshake *hubble.HandshakeMessageHeader
+	handshake *hubble.HandshakeMessage
 	connection *hubble.ProxyConnection
 }
 
@@ -39,6 +39,19 @@ func unregister(gateway *Gateway) {
 	delete(gateways, gateway.handshake.Name)
 }
 
+func readNextMessage(conn *websocket.Conn) (uint8, interface{}, error) {
+	mode, reader, err := conn.NextReader()
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if mode != websocket.BinaryMessage {
+		//only binary messages are supported.
+		return 0, nil, errors.New("Only binary messages are supported")
+	}
+
+	return hubble.Loads(reader)
+}
 
 func handler(ws *websocket.Conn, request *http.Request) {
 	conn := hubble.NewConnection(ws)
@@ -52,12 +65,12 @@ func handler(ws *websocket.Conn, request *http.Request) {
 		return
 	}
 
-	if mtype != hubble.HANDSHAKE_MESSAGE_HEADER_TYPE {
+	if mtype != hubble.HANDSHAKE_MESSAGE_TYPE {
 		log.Println(fmt.Sprintf("Expecting handshake message, got %v", mtype))
 		return
 	}
 
-	handshake := message.(*hubble.HandshakeMessageHeader)
+	handshake := message.(*hubble.HandshakeMessage)
 
 	var gateway = Gateway{
 		handshake: handshake,

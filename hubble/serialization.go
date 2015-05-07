@@ -9,9 +9,9 @@ import (
 var msgHandle = new(codec.MsgpackHandle)
 
 //Dumps a message to writer. flag it with the given type
-func dumps(writer io.Writer, mtype uint8, flags uint8, message interface{}) error {
+func Dumps(writer io.Writer, mtype uint8, message interface{}) error {
 	//send type byte.
-	writer.Write([]byte{mtype, flags})
+	writer.Write([]byte{mtype})
 
 	var encoder = codec.NewEncoder(writer, msgHandle)
 
@@ -19,19 +19,16 @@ func dumps(writer io.Writer, mtype uint8, flags uint8, message interface{}) erro
 }
 
 //Loads a message from a reader, assuming first byte is the message types.
-func loads(reader io.Reader) (uint8, uint8, interface{}, error) {
-	var header = make([]byte, 2)
-	_, err := reader.Read(header)
+func Loads(reader io.Reader) (uint8, interface{}, error) {
+	var mtype = make([]byte, 1)
+	_, err := reader.Read(mtype)
 	if err != nil {
-		return 0, 0, nil, err
+		return 0, nil, err
 	}
-	
-	var mtype uint8 = header[0]
-	var flags uint8 = header[1]
 
-	initiator, ok := MessageHeaderTypes[mtype]
+	initiator, ok := MessageTypes[mtype[0]]
 	if !ok {
-		return mtype, flags, nil, errors.New("Invalid mtype")
+		return mtype[0], nil, errors.New("Invalid mtype")
 	}
 
 	decoder := codec.NewDecoder(reader, msgHandle)
@@ -40,8 +37,8 @@ func loads(reader io.Reader) (uint8, uint8, interface{}, error) {
 	
 	derr := decoder.Decode(value)
 	if derr != nil {
-		return mtype, flags, nil, derr
+		return mtype[0], nil, derr
 	}
 
-	return mtype, flags, value, nil
+	return mtype[0], value, nil
 }
