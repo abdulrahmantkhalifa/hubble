@@ -5,6 +5,8 @@ import (
 	"net"
 	"fmt"
 	"log"
+	"io"
+	"sync"
 	"code.google.com/p/go-uuid/uuid"
 )
 
@@ -14,6 +16,7 @@ type Tunnel struct {
 	remote uint16
 	gateway string
 }
+
 
 func NewTunnel(local uint16, gateway string, ip net.IP, remote uint16) *Tunnel {
 	tunnel := new(Tunnel)
@@ -59,7 +62,7 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 	defer func() {
 		log.Printf("Terminating session %v on tunnel %v\n", guid, tunnel)
 		socket.Close()
-	}
+	}()
 	
 	//1- send initiator message ...
 	log.Printf("Starting session %v on tunnel %v", guid, tunnel)
@@ -83,5 +86,39 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 		return
 	}
 
-	//otherwise start forwarding routines
+	//channel := make(chan []byte)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		//socket -> proxy 
+		defer wg.Done()
+
+		buffer := make([]byte, 1024)
+		for {
+			count, read_err := socket.Read(buffer)
+			if read_err != nil && read_err != io.EOF {
+				log.Printf("Failer on session %v %v: %v", guid, tunnel, read_err)
+				return
+			}
+
+			err = conn.Send(hubble.DATA_MESSAGE_TYPE, &hubble.DataMessage{
+				GUID: guid,
+				Data: buffer[0:count],
+			})
+
+			if err != nil {
+				//failed to forward data to proxy
+				log.Printf("Failer on session %v %v: %v", guid, tunnel, err)
+				return
+			}
+
+			if read_err == io.EOF {
+				return
+			}
+		}
+	}()
+
+	wg.Wait()
 }

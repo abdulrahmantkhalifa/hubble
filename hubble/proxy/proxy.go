@@ -58,6 +58,9 @@ func handler(ws *websocket.Conn, request *http.Request) {
 				log.Println("New Session", initiator)
 				err := gw.openSession(initiator)
 				conn.SendAckOrError(err)
+			case hubble.DATA_MESSAGE_TYPE:
+				data := message.(*hubble.DataMessage)
+				log.Println(string(data.Data))
 		}
 	}
 }
