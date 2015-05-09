@@ -12,34 +12,68 @@ const TERMINATOR_MESSAGE_TYPE uint8 = 4
 
 const ACK_MESSAGE_TYPE uint8 = 255
 
+
+type MessageCapsule struct {
+	Mtype uint8
+	Message interface{}
+}
+
+//Agent level messages
+
+//Handshake message
 type HandshakeMessage struct {
 	Name string
 	Key string
 }
 
-type InitiatorMessage struct {
+//Session level messages
+
+//GuidMessage
+type GuidMessage struct {
 	GUID string
+}
+
+type SessionMessage interface {
+	GetGUID() string
+}
+
+func (msg *GuidMessage) GetGUID() string {
+	return msg.GUID
+}
+
+//Initiator message
+type InitiatorMessage struct {
+	GuidMessage
 	Ip net.IP
 	Port uint16
 	Gatename string
 }
 
+//Data message
 type DataMessage struct {
-	GUID string
+	GuidMessage
 	Data []byte
 }
 
+//Terminator message
 type TerminatorMessage struct {
-	GUID string
+	GuidMessage
 }
 
+//Ack message
 type AckMessage struct {
+	GuidMessage
 	Ok bool
 	Message string
 }
 
+
 func (msg *InitiatorMessage) String() string {
 	return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.Ip, msg.Port, msg.GUID)
+}
+
+func (msg *TerminatorMessage) String() string {
+	return fmt.Sprintf("id(%v)", msg.GUID)
 }
 
 var MessageTypes = map[uint8]func() interface{} {

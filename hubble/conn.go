@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"errors"
 	"github.com/gorilla/websocket"
+	"sync"
 )
 
 type Connection struct {
 	ws *websocket.Conn
+	rlock sync.Mutex
+	wlock sync.Mutex
 }
 
 var unexpectedMessageType = errors.New("Unexpected message type")
@@ -46,6 +49,8 @@ func NewConnection(ws *websocket.Conn) *Connection {
 
 
 func (conn *Connection) Send(mtype uint8, message interface{}) error {
+	conn.wlock.Lock()
+	defer conn.wlock.Unlock()
 	writer, err := conn.ws.NextWriter(websocket.BinaryMessage)
 	defer writer.Close()
 	if err != nil {
@@ -56,6 +61,8 @@ func (conn *Connection) Send(mtype uint8, message interface{}) error {
 }
 
 func (conn *Connection) Receive() (uint8, interface{}, error) {
+	conn.rlock.Lock()
+	defer conn.rlock.Unlock()
 	mode, reader, err := conn.ws.NextReader()
 	if err != nil {
 		return 0, nil, err
@@ -69,8 +76,11 @@ func (conn *Connection) Receive() (uint8, interface{}, error) {
 	return loads(reader)
 }
 
-func (conn *Connection) SendAckOrError(err error) error {
+func (conn *Connection) SendAckOrError(guid string, err error) error {
+	//message := &AckMessage{GuidMessage{guid}}
+
 	return conn.Send(ACK_MESSAGE_TYPE, &AckMessage {
+		GuidMessage: GuidMessage{guid},
 		Ok: err == nil,
 		Message: fmt.Sprintf("%v", err),
 	})

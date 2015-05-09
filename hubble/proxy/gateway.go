@@ -22,13 +22,9 @@ type gateway struct {
 	handshake *hubble.HandshakeMessage
 	connection *hubble.Connection
 	terminals map[string]*terminal
-	channel chan *capsule
+	channel chan *hubble.MessageCapsule
 }
 
-type capsule struct {
-	mtype uint8
-	message interface{}
-}
 
 var gateways = make(map[string]*gateway)
 
@@ -38,8 +34,12 @@ func newGateway(connection *hubble.Connection,
 	gw.connection = connection
 	gw.handshake = handshake
 	gw.terminals = make(map[string]*terminal)
-	gw.channel = make(chan *capsule, GatewayQueueSize)
+	gw.channel = make(chan *hubble.MessageCapsule, GatewayQueueSize)
 	return gw
+}
+
+func (gw *gateway) String() string {
+	return gw.handshake.Name
 }
 
 func (gw *gateway) register() error {
@@ -60,6 +60,10 @@ func (gw *gateway) unregister() {
 	//TODO: Close all hanging sessions
 }
 
+func (gw *gateway) serve() {
+
+}
+
 func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 	endGw, ok := gateways[intiator.Gatename]
 	if !ok {
@@ -78,9 +82,9 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 
 	endGw.terminals[intiator.GUID] = startTerm
 
-	endTerm._forward(&capsule {
-		mtype: hubble.INITIATOR_MESSAGE_TYPE,
-		message: intiator,
+	endTerm._forward(&hubble.MessageCapsule {
+		Mtype: hubble.INITIATOR_MESSAGE_TYPE,
+		Message: intiator,
 	})
 
 	return nil
@@ -97,23 +101,27 @@ func (gw *gateway) closeSession(terminator *hubble.TerminatorMessage) {
 	//remove ref from the other end terminals
 	defer delete(terminal.gateway.terminals, terminator.GUID)
 
-	terminal._forward(&capsule{
-		mtype: hubble.TERMINATOR_MESSAGE_TYPE,
-		message: terminator,
+	terminal._forward(&hubble.MessageCapsule{
+		Mtype: hubble.TERMINATOR_MESSAGE_TYPE,
+		Message: terminator,
 	}) //TODO: fix!!
 }
 
-func (term terminal) _forward(message *capsule) {
+func (gw *gateway) forward(guid string, mtype uint8, message interface{}) {
+	terminal, ok := gw.terminals[guid]
+	if !ok {
+		return
+	}
+
+	terminal._forward(&hubble.MessageCapsule{
+		Mtype: mtype,
+		Message: message,
+	})
+}
+
+func (term terminal) _forward(message *hubble.MessageCapsule) {
 	//push message to gateway channel
 	go func() {
 		term.gateway.channel <- message
 	}()
-}
-
-func (term terminal) forward(data *hubble.DataMessage) {
-	//push message to gateway channel
-	term._forward(&capsule{
-		mtype: hubble.DATA_MESSAGE_TYPE,
-		message: data,
-	})
 }

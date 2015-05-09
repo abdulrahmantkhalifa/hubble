@@ -61,40 +61,50 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 	
 	defer func() {
 		log.Printf("Terminating session %v on tunnel %v\n", guid, tunnel)
+		delete(sessions, guid)
 		socket.Close()
 	}()
 	
+	channel := make(chan *hubble.MessageCapsule, sessionQueueSize)
+	
+	sessions[guid] = channel
+
 	//1- send initiator message ...
 	log.Printf("Starting session %v on tunnel %v", guid, tunnel)
 
 	err := conn.Send(hubble.INITIATOR_MESSAGE_TYPE, &hubble.InitiatorMessage {
-		GUID: guid,
+		GuidMessage: hubble.GuidMessage{guid},
 		Ip: tunnel.ip,
 		Port: tunnel.remote,
 		Gatename: tunnel.gateway,
 	})
-
+	
 	if err != nil {
 		log.Printf("Failed to start session %v to %v: %v\n", guid, tunnel, err)
 		return
 	}
 
+	//read first message. must be ack.
+
 	//2- recieve ack
-	err = conn.ReceiveAck()
-	if err != nil {
-		log.Println(err)
+	log.Println("Waiting for ack from:", tunnel.gateway)
+	msgCap := <- channel
+	ack := msgCap.Message.(*hubble.AckMessage)
+	if !ack.Ok {
+		//failed to start session!
+		log.Println(ack.Message)
 		return
 	}
 
-	//channel := make(chan []byte)
-
+	log.Printf("Session %v started...", guid)
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 
 	go func() {
 		//socket -> proxy 
 		defer wg.Done()
-
+		log.Println("Start session sender")
+		
 		buffer := make([]byte, 1024)
 		for {
 			count, read_err := socket.Read(buffer)
@@ -104,7 +114,7 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 			}
 
 			err = conn.Send(hubble.DATA_MESSAGE_TYPE, &hubble.DataMessage{
-				GUID: guid,
+				GuidMessage: hubble.GuidMessage{guid},
 				Data: buffer[0:count],
 			})
 
@@ -117,6 +127,16 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 			if read_err == io.EOF {
 				return
 			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		log.Println("Start sessoin receiver")
+		
+		for {
+			msgCap := <- channel
+			log.Println(msgCap.Mtype, msgCap.Message)
 		}
 	}()
 

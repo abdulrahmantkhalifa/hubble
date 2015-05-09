@@ -75,6 +75,28 @@ func main() {
 		log.Fatal(err)
 	}
 
+	go func () {
+		//receive all messages.
+		log.Println("Start receiving loop")
+		for {
+			mtype, message, err := conn.Receive()
+			if err != nil {
+				//we should check error types to take a decistion. for now just exit
+				log.Fatalf("Receive loop failed: %v", err)
+			}
+			log.Println(mtype, message)
+			switch mtype {
+				case hubble.INITIATOR_MESSAGE_TYPE:
+					//TODO: Make a connection to service.
+					initiator := message.(*hubble.InitiatorMessage)
+					//send ack (debug)
+					conn.SendAckOrError(initiator.GUID, nil)
+				default:
+					agent.Dispatch(mtype, message.(hubble.SessionMessage))
+			}
+		}
+	}()
+
 	for _, tunnel := range tunnels {
 		tunnel.Serve(conn)
 	}

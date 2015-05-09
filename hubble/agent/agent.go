@@ -2,7 +2,10 @@ package agent
 
 import (
 	"hubble"
+	"log"
 )
+
+
 //Handshake
 func Handshake(conn *hubble.Connection, agentname string, key string) error {
 	message := hubble.HandshakeMessage {
@@ -15,11 +18,28 @@ func Handshake(conn *hubble.Connection, agentname string, key string) error {
 		return err
 	}
 
-	//read ack.
+	//Next message must be an ack message, read ack.
 	err = conn.ReceiveAck()
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func Dispatch(mtype uint8, message hubble.SessionMessage) {
+	go func() {
+		session := sessions[message.GetGUID()]
+
+		if session == nil {
+			log.Println("Message to unknow session received: ", session)
+			return
+		}
+
+		capsule := new(hubble.MessageCapsule)
+		capsule.Mtype = mtype
+		capsule.Message = message
+
+		session <- capsule
+	}()
 }

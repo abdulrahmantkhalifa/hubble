@@ -37,7 +37,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	gw := newGateway(conn, handshake)
 
 	err = gw.register()
-	conn.SendAckOrError(err)
+	conn.SendAckOrError("", err)
 	
 	if err != nil {
 		return
@@ -45,22 +45,48 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 	defer gw.unregister()
 
-	//Read loop
+	go func() {
+		for {
+			msgCap := <- gw.channel
+			err := conn.Send(msgCap.Mtype, msgCap.Message)
+			log.Println("Forward to", gw, msgCap)
+			if err != nil {
+				log.Println("Failed to forward message to gateway:", gw)
+			}
+		}
+	}()
+
+	//dispatch loop
 	for {
 		mtype, message, err := conn.Receive()
 		if err != nil {
+			log.Println(err)
 			break
 		}
-		
+
 		switch mtype {
 			case hubble.INITIATOR_MESSAGE_TYPE:
 				initiator := message.(*hubble.InitiatorMessage)
 				log.Println("New Session", initiator)
 				err := gw.openSession(initiator)
-				conn.SendAckOrError(err)
-			case hubble.DATA_MESSAGE_TYPE:
-				data := message.(*hubble.DataMessage)
-				log.Println(string(data.Data))
+				if err != nil {
+					//in case local session pipe starting failes, we send 
+					//error to agent. otherwise we wait for ack from
+					//the other end
+					conn.SendAckOrError(initiator.GUID, err)
+				}
+			case hubble.TERMINATOR_MESSAGE_TYPE:
+				//close session.
+				terminator := message.(*hubble.TerminatorMessage)
+				log.Println("Ending Session", terminator)
+				gw.closeSession(terminator)
+			case hubble.DATA_MESSAGE_TYPE, hubble.ACK_MESSAGE_TYPE:
+				//just forward
+				msg := message.(hubble.SessionMessage)
+				log.Println("Forwarding message:", msg)
+				gw.forward(msg.GetGUID(), mtype, message)
+			default:
+				log.Println("Unknown message type:", mtype)
 		}
 	}
 }
