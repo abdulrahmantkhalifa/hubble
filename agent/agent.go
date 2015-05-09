@@ -58,11 +58,6 @@ func main() {
 		log.Fatal("Missing name")
 	}
 
-	// if key == "" {
-	// 	flag.PrintDefaults()
-	// 	log.Fatal("Missing key")
-	// }
-
 	//1- intialize connection to proxy
 	conn, err := hubble.NewProxyConnection(url)
 	if err != nil {
@@ -84,13 +79,12 @@ func main() {
 				//we should check error types to take a decistion. for now just exit
 				log.Fatalf("Receive loop failed: %v", err)
 			}
-			log.Println(mtype, message)
 			switch mtype {
 				case hubble.INITIATOR_MESSAGE_TYPE:
 					//TODO: Make a connection to service.
 					initiator := message.(*hubble.InitiatorMessage)
 					//send ack (debug)
-					conn.SendAckOrError(initiator.GUID, nil)
+					agent.StartLocalSession(conn, initiator)
 				default:
 					agent.Dispatch(mtype, message.(hubble.SessionMessage))
 			}

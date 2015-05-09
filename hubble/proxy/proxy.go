@@ -49,7 +49,6 @@ func handler(ws *websocket.Conn, request *http.Request) {
 		for {
 			msgCap := <- gw.channel
 			err := conn.Send(msgCap.Mtype, msgCap.Message)
-			log.Println("Forward to", gw, msgCap)
 			if err != nil {
 				log.Println("Failed to forward message to gateway:", gw)
 			}
@@ -83,7 +82,6 @@ func handler(ws *websocket.Conn, request *http.Request) {
 			case hubble.DATA_MESSAGE_TYPE, hubble.ACK_MESSAGE_TYPE:
 				//just forward
 				msg := message.(hubble.SessionMessage)
-				log.Println("Forwarding message:", msg)
 				gw.forward(msg.GetGUID(), mtype, message)
 			default:
 				log.Println("Unknown message type:", mtype)

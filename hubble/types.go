@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+const INVALID_MESSAGE_TYPE uint8 = 0
 const HANDSHAKE_MESSAGE_TYPE uint8 = 1
 const INITIATOR_MESSAGE_TYPE uint8 = 2
 const DATA_MESSAGE_TYPE uint8 = 3

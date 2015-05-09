@@ -5,8 +5,6 @@ import (
 	"net"
 	"fmt"
 	"log"
-	"io"
-	"sync"
 	"code.google.com/p/go-uuid/uuid"
 )
 
@@ -88,57 +86,17 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 
 	//2- recieve ack
 	log.Println("Waiting for ack from:", tunnel.gateway)
+	//TODO: Timeout in case other peer didn't send a response.
+
 	msgCap := <- channel
 	ack := msgCap.Message.(*hubble.AckMessage)
 	if !ack.Ok {
 		//failed to start session!
-		log.Println(ack.Message)
 		return
 	}
 
 	log.Printf("Session %v started...", guid)
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		//socket -> proxy 
-		defer wg.Done()
-		log.Println("Start session sender")
-		
-		buffer := make([]byte, 1024)
-		for {
-			count, read_err := socket.Read(buffer)
-			if read_err != nil && read_err != io.EOF {
-				log.Printf("Failer on session %v %v: %v", guid, tunnel, read_err)
-				return
-			}
-
-			err = conn.Send(hubble.DATA_MESSAGE_TYPE, &hubble.DataMessage{
-				GuidMessage: hubble.GuidMessage{guid},
-				Data: buffer[0:count],
-			})
-
-			if err != nil {
-				//failed to forward data to proxy
-				log.Printf("Failer on session %v %v: %v", guid, tunnel, err)
-				return
-			}
-
-			if read_err == io.EOF {
-				return
-			}
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		log.Println("Start sessoin receiver")
-		
-		for {
-			msgCap := <- channel
-			log.Println(msgCap.Mtype, msgCap.Message)
-		}
-	}()
-
-	wg.Wait()
+	
+	ServeSession(guid, conn, channel, socket)
 }
+
