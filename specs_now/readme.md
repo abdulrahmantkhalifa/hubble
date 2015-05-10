@@ -82,14 +82,47 @@ can make connections.
 ## Protocol
 Descript onwire protocols for communication between agents and the proxy server
 
-### Data protocol
-#### Initiator packet
+All messages are constructed as following
+
+|Message Type (1 byte)| Message Payload|
+|---------------------|----------------|
+
+
+The Message Payload is a 'msgpack' dump of the message struct as desciped below. Note that more messages might be added later
+
+### Handshake Messages
+**Message Type**: 0x1
+**Message Payload**:
+```javascript
+{
+    Name: "Name of the agent"
+    Key: "Key of the agent"
+}
+```
+
+### Session Messages
+
+#### Initiator Message
 Initiator packet is used when an agent is trying to start a connection to a remote service. The guid is the connection ID which is picked by the 
 agent itself and will be used later to track the connection.
 
-![Initiator packet](https://docs.google.com/drawings/d/1tzswzSQro52J9zFu63LPkilOyv9knamDlWDrCx9OIps/pub?w=960&h=720)
-#### Data packet
+```javascript
+GUID: "Id of the session"
+Ip: "Ip of the remote end"
+Port: "Port of the remote end"
+Gatename: "Agent name of the remote end"
+```
+
+#### Data Message
 
 After initializing connection, all the following packets should be data packets structured as follows.
-![Data packet](https://docs.google.com/drawings/d/1uIXPssx7Q0N4fh1lI-StVzFOHL7m9gasKeRTrTLXODQ/pub?w=959&h=360)
+```javascript
+GUID: "Id of the session"
+Data: "[]byte that carries the data"
+```
 
+#### Terminator Message
+
+```javascript
+GUID: "Id of the session"
+```
