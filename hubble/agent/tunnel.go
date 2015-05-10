@@ -59,8 +59,11 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 	guid := uuid.New()
 	
 	defer func() {
-		log.Printf("Terminating session %v on tunnel %v\n", guid, tunnel)
+		log.Printf("Session %v on tunnel %v terminated\n", guid, tunnel)
 		delete(sessions, guid)
+		conn.Send(hubble.TERMINATOR_MESSAGE_TYPE, &hubble.TerminatorMessage{
+			GuidMessage: hubble.GuidMessage{guid},
+		})
 		socket.Close()
 	}()
 	
@@ -93,7 +96,7 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 				log.Println("Expecting ack message, got: ", msgCap.Mtype)
 				return
 			}
-			
+
 			ack := msgCap.Message.(*hubble.AckMessage)
 			if !ack.Ok {
 				//failed to start session!

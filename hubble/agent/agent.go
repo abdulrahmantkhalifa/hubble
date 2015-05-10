@@ -32,7 +32,7 @@ func Dispatch(mtype uint8, message hubble.SessionMessage) {
 		session := sessions[message.GetGUID()]
 
 		if session == nil {
-			log.Println("Message to unknow session received: ", message.GetGUID())
+			log.Println("Message to unknow session received: ", message.GetGUID(), mtype)
 			return
 		}
 

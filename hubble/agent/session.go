@@ -86,7 +86,6 @@ func ServeSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 			//send on open socket.
 			if msgCap.Mtype == hubble.INVALID_MESSAGE_TYPE || msgCap.Mtype == hubble.TERMINATOR_MESSAGE_TYPE {
 				//force socket termination
-				log.Println("Terminating local session:", guid)
 				socket.Close()
 				return
 			}
@@ -107,4 +106,5 @@ func ServeSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 	}()
 
 	wg.Wait()
+	log.Printf("Session '%v' server terminates", guid)
 }
