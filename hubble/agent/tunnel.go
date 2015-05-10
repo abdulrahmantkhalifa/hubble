@@ -5,6 +5,7 @@ import (
 	"net"
 	"fmt"
 	"log"
+	"time"
 	"code.google.com/p/go-uuid/uuid"
 )
 
@@ -86,13 +87,21 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 
 	//2- recieve ack
 	log.Println("Waiting for ack from:", tunnel.gateway)
-	//TODO: Timeout in case other peer didn't send a response.
-
-	msgCap := <- channel
-	ack := msgCap.Message.(*hubble.AckMessage)
-	if !ack.Ok {
-		//failed to start session!
-		return
+	select {
+		case msgCap := <- channel:
+			if msgCap.Mtype != hubble.ACK_MESSAGE_TYPE {
+				log.Println("Expecting ack message, got: ", msgCap.Mtype)
+				return
+			}
+			
+			ack := msgCap.Message.(*hubble.AckMessage)
+			if !ack.Ok {
+				//failed to start session!
+				return
+			}
+		case <- time.After(30 * time.Second):
+			//timedout, return
+			return
 	}
 
 	log.Printf("Session %v started...", guid)

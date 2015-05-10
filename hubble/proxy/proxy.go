@@ -15,6 +15,36 @@ var upgrader = websocket.Upgrader {
 }
 
 
+func initiatorMessage(gw *gateway, mtype uint8, message interface{}) {
+	initiator := message.(*hubble.InitiatorMessage)
+	log.Println("New Session", initiator)
+	err := gw.openSession(initiator)
+	if err != nil {
+		//in case local session pipe starting failes, we send 
+		//error to agent. otherwise we wait for ack from
+		//the other end
+		gw.connection.SendAckOrError(initiator.GUID, err)
+	}
+}
+
+func terminatorMessage(gw *gateway, mtype uint8, message interface{}) {
+	terminator := message.(*hubble.TerminatorMessage)
+	log.Println("Ending Session:", gw, terminator)
+	gw.closeSession(terminator)
+}
+
+func forward(gw *gateway, mtype uint8, message interface{}) {
+	msg := message.(hubble.SessionMessage)
+	gw.forward(msg.GetGUID(), mtype, message)
+}
+
+var messageHandlers = map[uint8] func (*gateway, uint8, interface{}) {
+	hubble.INITIATOR_MESSAGE_TYPE: initiatorMessage,
+	hubble.TERMINATOR_MESSAGE_TYPE: terminatorMessage,
+	hubble.DATA_MESSAGE_TYPE: forward,
+	hubble.ACK_MESSAGE_TYPE: forward,
+}
+
 func handler(ws *websocket.Conn, request *http.Request) {
 	conn := hubble.NewConnection(ws)
 	defer conn.Close()
@@ -48,6 +78,11 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	go func() {
 		for {
 			msgCap := <- gw.channel
+			if msgCap == nil {
+				//channel has been closed
+				return
+			}
+
 			err := conn.Send(msgCap.Mtype, msgCap.Message)
 			if err != nil {
 				log.Println("Failed to forward message to gateway:", gw)
@@ -63,29 +98,12 @@ func handler(ws *websocket.Conn, request *http.Request) {
 			break
 		}
 
-		switch mtype {
-			case hubble.INITIATOR_MESSAGE_TYPE:
-				initiator := message.(*hubble.InitiatorMessage)
-				log.Println("New Session", initiator)
-				err := gw.openSession(initiator)
-				if err != nil {
-					//in case local session pipe starting failes, we send 
-					//error to agent. otherwise we wait for ack from
-					//the other end
-					conn.SendAckOrError(initiator.GUID, err)
-				}
-			case hubble.TERMINATOR_MESSAGE_TYPE:
-				//close session.
-				terminator := message.(*hubble.TerminatorMessage)
-				log.Println("Ending Session", terminator)
-				gw.closeSession(terminator)
-			case hubble.DATA_MESSAGE_TYPE, hubble.ACK_MESSAGE_TYPE:
-				//just forward
-				msg := message.(hubble.SessionMessage)
-				gw.forward(msg.GetGUID(), mtype, message)
-			default:
-				log.Println("Unknown message type:", mtype)
+		msgHandler, ok := messageHandlers[mtype]
+		if !ok {
+			log.Println("Unknown message type:", mtype)
 		}
+
+		msgHandler(gw, mtype, message)
 	}
 }
 //The http handler for the websockets

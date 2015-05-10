@@ -55,13 +55,13 @@ func (gw *gateway) register() error {
 
 func (gw *gateway) unregister() {
 	log.Println(fmt.Sprintf("Unegistering gateway: %v", gw.handshake.Name))
+	close(gw.channel)
+
 	delete(gateways, gw.handshake.Name)
 
-	//TODO: Close all hanging sessions
-}
-
-func (gw *gateway) serve() {
-
+	for _, terminal := range gw.terminals {
+		terminal.terminate()
+	}
 }
 
 func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
@@ -82,7 +82,7 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 
 	endGw.terminals[intiator.GUID] = startTerm
 
-	endTerm._forward(&hubble.MessageCapsule {
+	endTerm.forward(&hubble.MessageCapsule {
 		Mtype: hubble.INITIATOR_MESSAGE_TYPE,
 		Message: intiator,
 	})
@@ -99,12 +99,7 @@ func (gw *gateway) closeSession(terminator *hubble.TerminatorMessage) {
 	//remove ref from this gateway terminals
 	defer delete(gw.terminals, terminator.GUID)
 	//remove ref from the other end terminals
-	defer delete(terminal.gateway.terminals, terminator.GUID)
-
-	terminal._forward(&hubble.MessageCapsule{
-		Mtype: hubble.TERMINATOR_MESSAGE_TYPE,
-		Message: terminator,
-	}) //TODO: fix!!
+	terminal.terminate()
 }
 
 func (gw *gateway) forward(guid string, mtype uint8, message interface{}) {
@@ -113,15 +108,34 @@ func (gw *gateway) forward(guid string, mtype uint8, message interface{}) {
 		return
 	}
 
-	terminal._forward(&hubble.MessageCapsule{
+	terminal.forward(&hubble.MessageCapsule{
 		Mtype: mtype,
 		Message: message,
 	})
 }
 
-func (term terminal) _forward(message *hubble.MessageCapsule) {
+func (term terminal) forward(message *hubble.MessageCapsule) {
 	//push message to gateway channel
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				//propable channel is closed.
+				//Do nothing.
+			}
+		}()
+
 		term.gateway.channel <- message
-	}()
+	} ()
+}
+
+func (term terminal) terminate() {
+	//remove ref from the other end terminals
+	defer delete(term.gateway.terminals, term.guid)
+
+	term.forward(&hubble.MessageCapsule{
+		Mtype: hubble.TERMINATOR_MESSAGE_TYPE,
+		Message: &hubble.TerminatorMessage{
+			GuidMessage: hubble.GuidMessage{term.guid},
+		},
+	})
 }

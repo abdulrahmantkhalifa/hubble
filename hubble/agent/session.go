@@ -13,7 +13,7 @@ const sessionQueueSize = 512
 var sessions = make(map[string]chan *hubble.MessageCapsule)
 
 func StartLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
-	log.Printf("Starting session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
+	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
 	go func() {
 		defer func(){
 			//send terminator message.
@@ -86,6 +86,7 @@ func ServeSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 			//send on open socket.
 			if msgCap.Mtype == hubble.INVALID_MESSAGE_TYPE || msgCap.Mtype == hubble.TERMINATOR_MESSAGE_TYPE {
 				//force socket termination
+				log.Println("Terminating local session:", guid)
 				socket.Close()
 				return
 			}
