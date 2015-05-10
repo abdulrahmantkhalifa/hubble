@@ -75,7 +75,7 @@ Agent, when started it will connect to the configured proxy server over websocke
 
 Agents also are used as the entry point for internal services, so when agent receives a new connection to an internal server, the server is first checked agains a white list to see if connection to this service is allowed, and if yes, the connection is establised and traffic is routed to the other end as desciped above.
 
-### Gateway
+### Gateway (Proxy)
 Gateway is responsible for dispatching the traffic to the correct agent. Also is responsible for managing authentication/authorization so only allowed gateways
 can make connections.
 
@@ -91,6 +91,7 @@ All messages are constructed as following
 The Message Payload is a 'msgpack' dump of the message struct as desciped below. Note that more messages might be added later
 
 ### Handshake Messages
+
 **Message Type**: 0x1
 **Message Payload**:
 ```javascript
@@ -106,23 +107,50 @@ The Message Payload is a 'msgpack' dump of the message struct as desciped below.
 Initiator packet is used when an agent is trying to start a connection to a remote service. The guid is the connection ID which is picked by the 
 agent itself and will be used later to track the connection.
 
+**Message Type**: 0x2
+**Message Payload**:
+
 ```javascript
-GUID: "Id of the session"
-Ip: "Ip of the remote end"
-Port: "Port of the remote end"
-Gatename: "Agent name of the remote end"
+{
+    GUID: "Id of the session"
+    Ip: "Ip of the remote end"
+    Port: "Port of the remote end"
+    Gatename: "Agent name of the remote end"
+}
 ```
 
 #### Data Message
 
 After initializing connection, all the following packets should be data packets structured as follows.
+
+**Message Type**: 0x3
+**Message Payload**:
 ```javascript
-GUID: "Id of the session"
-Data: "[]byte that carries the data"
+{
+    GUID: "Id of the session"
+    Data: "[]byte that carries the data"
+}
 ```
 
 #### Terminator Message
 
+**Message Type**: 0x4
+**Message Payload**:
 ```javascript
-GUID: "Id of the session"
+{
+    GUID: "Id of the session"
+}
 ```
+
+#### Ack Message
+
+**Message Type**: 0xFF
+**Message Payload**:
+
+```javascript
+{
+    Ok: true or false
+    Message: "reason"
+}
+```
+![Protocol Diagram](http://www.plantuml.com/plantuml/img/dPBFRjim3CRlUWh2bpP0cWSerWB1Xc4xRUXws81TM4bk1CkaeJzjylQb93iDcdQ7-IIBtqUAFpAvv2rqdtaSCpcDoJ71py29DVjEgGVEP30SeDi-MahmkmECWEMyLnE6vBIRK0ATcFQ76ftAwSpvvzLvKAfbWAlRfhw6RqWcxd2m2ds2Nrbh6wC2-QgWA9ld6hPwkEJX9eLiLyhwQE47lVgXH-TpiF_qzYYsDOnIGo8t5tSM8zF5wdtJlGsZ8qmMD1DPNI0fIqPjDflpJhwJImuJXqjdrdF3wxzKChjf3HE7jAfDpbp02HR9-VJUaoNVLmxF60ou9U_ox2flgfFo9tH0jBNJ3_hgvyoe1mWsJaon9IMMNeDxtANwMxuwNeWxpjw0OT3U8kK9nZAoHHI5EqHvNTaYQIijuCnHulfQJeBrPVLUKDQIRPWdMEHoHbDQaOjC0_4pGU9vo_vhoCleFFC4Np0XcFpWtNwPvQUhsnbc2QePyPlR3-U_R4jTW9Kwc-URU6NjRTzGR-dGXA2H1AMGIRj6AHrznmKuWdi1)
