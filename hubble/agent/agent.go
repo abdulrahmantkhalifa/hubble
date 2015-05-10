@@ -9,6 +9,7 @@ import (
 //Handshake
 func Handshake(conn *hubble.Connection, agentname string, key string) error {
 	message := hubble.HandshakeMessage {
+		Version: hubble.PROTOCOL_VERSION_0_1,
 		Name: agentname,
 		Key: key,
 	}

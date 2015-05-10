@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+const PROTOCOL_VERSION_0_1 string = "0.1"
+
 const INVALID_MESSAGE_TYPE uint8 = 0
 const HANDSHAKE_MESSAGE_TYPE uint8 = 1
 const INITIATOR_MESSAGE_TYPE uint8 = 2
@@ -23,6 +25,7 @@ type MessageCapsule struct {
 
 //Handshake message
 type HandshakeMessage struct {
+	Version string
 	Name string
 	Key string
 }

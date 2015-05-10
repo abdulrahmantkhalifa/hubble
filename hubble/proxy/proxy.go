@@ -5,8 +5,11 @@ import (
 	"log"
 	"fmt"
 	"net/http"
+	"errors"
 	"github.com/gorilla/websocket"
 )
+
+var invalidProtocolVersion = errors.New("Invalid protocol version")
 
 var upgrader = websocket.Upgrader {
     ReadBufferSize:  1024,
@@ -63,6 +66,11 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	}
 
 	handshake := message.(*hubble.HandshakeMessage)
+	
+	if handshake.Version != hubble.PROTOCOL_VERSION_0_1 {
+		conn.SendAckOrError("", invalidProtocolVersion)
+		return
+	}
 
 	gw := newGateway(conn, handshake)
 
@@ -94,7 +102,6 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	for {
 		mtype, message, err := conn.Receive()
 		if err != nil {
-			log.Println(err)
 			break
 		}
 
