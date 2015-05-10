@@ -32,6 +32,7 @@ func StartLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessa
 		defer socket.Close()
 
 		channel := make(chan *hubble.MessageCapsule, sessionQueueSize)
+		defer close(channel)
 
 		sessions[initiator.GUID] = channel
 
@@ -82,9 +83,9 @@ func ServeSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 		defer wg.Done()
 		
 		for {
-			msgCap := <- channel
+			msgCap, ok := <- channel
 			//send on open socket.
-			if msgCap.Mtype == hubble.INVALID_MESSAGE_TYPE || msgCap.Mtype == hubble.TERMINATOR_MESSAGE_TYPE {
+			if !ok || msgCap.Mtype == hubble.INVALID_MESSAGE_TYPE || msgCap.Mtype == hubble.TERMINATOR_MESSAGE_TYPE {
 				//force socket termination
 				socket.Close()
 				return

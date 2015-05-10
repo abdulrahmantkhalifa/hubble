@@ -29,6 +29,12 @@ func Handshake(conn *hubble.Connection, agentname string, key string) error {
 
 func Dispatch(mtype uint8, message hubble.SessionMessage) {
 	go func() {
+		defer func (){
+			if err := recover(); err != nil {
+				//Can't send data to session channel?!. Please don't panic, chill out and 
+				//relax, it's probably closed. Do nothing.
+			}
+		} ()
 		session := sessions[message.GetGUID()]
 
 		if session == nil {

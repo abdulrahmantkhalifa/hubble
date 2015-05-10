@@ -68,7 +68,8 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 	}()
 	
 	channel := make(chan *hubble.MessageCapsule, sessionQueueSize)
-	
+	defer close(channel)
+
 	sessions[guid] = channel
 
 	//1- send initiator message ...
@@ -91,8 +92,8 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 	//2- recieve ack
 	log.Println("Waiting for ack from:", tunnel.gateway)
 	select {
-		case msgCap := <- channel:
-			if msgCap.Mtype != hubble.ACK_MESSAGE_TYPE {
+		case msgCap, ok := <- channel:
+			if !ok || msgCap.Mtype != hubble.ACK_MESSAGE_TYPE {
 				log.Println("Expecting ack message, got: ", msgCap.Mtype)
 				return
 			}
