@@ -7,7 +7,7 @@ import (
 
 
 //Handshake
-func Handshake(conn *hubble.Connection, agentname string, key string) error {
+func handshake(conn *hubble.Connection, agentname string, key string) error {
 	message := hubble.HandshakeMessage {
 		Version: hubble.PROTOCOL_VERSION_0_1,
 		Name: agentname,
@@ -28,7 +28,7 @@ func Handshake(conn *hubble.Connection, agentname string, key string) error {
 	return nil
 }
 
-func Dispatch(mtype uint8, message hubble.SessionMessage) {
+func dispatch(mtype uint8, message hubble.SessionMessage) {
 	go func() {
 		defer func (){
 			if err := recover(); err != nil {
@@ -49,4 +49,43 @@ func Dispatch(mtype uint8, message hubble.SessionMessage) {
 
 		session <- capsule
 	}()
+}
+
+func Agent(name string, key string, url string, tunnels []*Tunnel) {
+	//1- intialize connection to proxy
+	conn, err := hubble.NewProxyConnection(url)
+	if err != nil {
+		log.Fatal("Failed to connect to proxy", err)
+	}
+	
+	//2- registration
+	err = handshake(conn, name, key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func () {
+		//receive all messages.
+		log.Println("Start receiving loop")
+		for {
+			mtype, message, err := conn.Receive()
+			if err != nil {
+				//we should check error types to take a decistion. for now just exit
+				log.Fatalf("Receive loop failed: %v", err)
+			}
+			switch mtype {
+				case hubble.INITIATOR_MESSAGE_TYPE:
+					//TODO: Make a connection to service.
+					initiator := message.(*hubble.InitiatorMessage)
+					//send ack (debug)
+					startLocalSession(conn, initiator)
+				default:
+					dispatch(mtype, message.(hubble.SessionMessage))
+			}
+		}
+	}()
+
+	for _, tunnel := range tunnels {
+		tunnel.serve(conn)
+	}
 }

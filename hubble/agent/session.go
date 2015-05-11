@@ -12,7 +12,7 @@ import (
 const sessionQueueSize = 512
 var sessions = make(map[string]chan *hubble.MessageCapsule)
 
-func StartLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
+func startLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
 	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
 	go func() {
 		defer func(){
@@ -36,11 +36,11 @@ func StartLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessa
 
 		sessions[initiator.GUID] = channel
 
-		ServeSession(initiator.GUID, conn, channel, socket)
+		serveSession(initiator.GUID, conn, channel, socket)
 	} ()
 }
 
-func ServeSession(guid string, conn *hubble.Connection, channel chan *hubble.MessageCapsule, socket net.Conn) {
+func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.MessageCapsule, socket net.Conn) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 

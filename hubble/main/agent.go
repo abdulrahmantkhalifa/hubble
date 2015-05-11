@@ -2,7 +2,6 @@
 package main
 
 import (
-	"hubble"
 	"hubble/agent"
 	"log"
 	"net"
@@ -10,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 )
+
 
 
 func main() {
@@ -58,42 +58,7 @@ func main() {
 		log.Fatal("Missing name")
 	}
 
-	//1- intialize connection to proxy
-	conn, err := hubble.NewProxyConnection(url)
-	if err != nil {
-		log.Fatal("Failed to connect to proxy", err)
-	}
-	
-	//2- registration
-	err = agent.Handshake(conn, name, key)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	go func () {
-		//receive all messages.
-		log.Println("Start receiving loop")
-		for {
-			mtype, message, err := conn.Receive()
-			if err != nil {
-				//we should check error types to take a decistion. for now just exit
-				log.Fatalf("Receive loop failed: %v", err)
-			}
-			switch mtype {
-				case hubble.INITIATOR_MESSAGE_TYPE:
-					//TODO: Make a connection to service.
-					initiator := message.(*hubble.InitiatorMessage)
-					//send ack (debug)
-					agent.StartLocalSession(conn, initiator)
-				default:
-					agent.Dispatch(mtype, message.(hubble.SessionMessage))
-			}
-		}
-	}()
-
-	for _, tunnel := range tunnels {
-		tunnel.Serve(conn)
-	}
+	agent.Agent(name, key, url, tunnels)
 
 	//wait forever
 	select {}

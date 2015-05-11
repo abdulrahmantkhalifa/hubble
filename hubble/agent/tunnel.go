@@ -32,7 +32,7 @@ func (tunnel *Tunnel) String() string {
 }
 
 //Open the tunnel on local side and server over the given connection to the proxy.
-func (tunnel *Tunnel) Serve(conn *hubble.Connection) {
+func (tunnel *Tunnel) serve(conn *hubble.Connection) {
 	go func() {
 		// open socket and wait for connections
 		listner, err := net.Listen("tcp", fmt.Sprintf(":%d", tunnel.local))
@@ -110,6 +110,6 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 
 	log.Printf("Session %v started...", guid)
 	
-	ServeSession(guid, conn, channel, socket)
+	serveSession(guid, conn, channel, socket)
 }
 
