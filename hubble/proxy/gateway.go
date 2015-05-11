@@ -115,17 +115,14 @@ func (gw *gateway) forward(guid string, mtype uint8, message interface{}) {
 }
 
 func (term terminal) forward(message *hubble.MessageCapsule) {
-	//push message to gateway channel
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				//propable channel is closed.
-				//Do nothing.
-			}
-		}()
+	defer func() {
+		if err := recover(); err != nil {
+			//propable channel is closed.
+			//Do nothing.
+		}
+	}()
 
-		term.gateway.channel <- message
-	} ()
+	term.gateway.channel <- message
 }
 
 func (term terminal) terminate() {

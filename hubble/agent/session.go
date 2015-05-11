@@ -64,7 +64,7 @@ func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 
 			err := conn.Send(hubble.DATA_MESSAGE_TYPE, &hubble.DataMessage{
 				GuidMessage: hubble.GuidMessage{guid},
-				Data: buffer[0:count],
+				Data: buffer[:count],
 			})
 
 			if err != nil {
