@@ -34,7 +34,8 @@ func newGateway(connection *hubble.Connection,
 	gw.connection = connection
 	gw.handshake = handshake
 	gw.terminals = make(map[string]*terminal)
-	gw.channel = make(chan *hubble.MessageCapsule, GatewayQueueSize)
+	//gw.channel = make(chan *hubble.MessageCapsule, GatewayQueueSize)
+	gw.channel = make(chan *hubble.MessageCapsule) //unbuffered for testing
 	return gw
 }
 
@@ -90,16 +91,23 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 	return nil
 }
 
-func (gw *gateway) closeSession(terminator *hubble.TerminatorMessage) {
+func (gw *gateway) closeSession(terminator *hubble.ConnectionClosedMessage) {
 	terminal, ok := gw.terminals[terminator.GUID]
-	if !ok {
-		return
-	}
+	if ok {
+		//remove ref from this gateway terminals
+		delete(gw.terminals, terminator.GUID)
+		//remove ref from the other end terminals
+		terminal.terminate()
 
-	//remove ref from this gateway terminals
-	defer delete(gw.terminals, terminator.GUID)
-	//remove ref from the other end terminals
-	terminal.terminate()
+		terminal, ok := terminal.gateway.terminals[terminator.GUID]
+
+		if ok {
+			//remove ref from this gateway terminals
+			delete(gw.terminals, terminator.GUID)
+			//remove ref from the other end terminals
+			terminal.terminate()
+		}	
+	}
 }
 
 func (gw *gateway) forward(guid string, mtype uint8, message interface{}) {
@@ -126,9 +134,6 @@ func (term terminal) forward(message *hubble.MessageCapsule) {
 }
 
 func (term terminal) terminate() {
-	//remove ref from the other end terminals
-	defer delete(term.gateway.terminals, term.guid)
-
 	term.forward(&hubble.MessageCapsule{
 		Mtype: hubble.TERMINATOR_MESSAGE_TYPE,
 		Message: &hubble.TerminatorMessage{

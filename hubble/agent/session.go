@@ -15,27 +15,30 @@ var sessions = make(map[string]chan *hubble.MessageCapsule)
 func startLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
 	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
 	go func() {
-		defer func(){
-			//send terminator message.
-			conn.Send(hubble.TERMINATOR_MESSAGE_TYPE, &hubble.TerminatorMessage {
-				GuidMessage: hubble.GuidMessage{initiator.GUID},
-			})
-		}()
+		// defer func(){
+		// 	//send terminator message.
+		// 	conn.Send(hubble.TERMINATOR_MESSAGE_TYPE, &hubble.TerminatorMessage {
+		// 		GuidMessage: hubble.GuidMessage{initiator.GUID},
+		// 	})
+		// }()
 
 		//make local connection
 		socket, err := net.Dial("tcp", fmt.Sprintf("%s:%d", initiator.Ip, initiator.Port))
 		conn.SendAckOrError(initiator.GUID, err)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 
 		defer socket.Close()
 
-		channel := make(chan *hubble.MessageCapsule, sessionQueueSize)
+		//channel := make(chan *hubble.MessageCapsule, sessionQueueSize)
+		channel := make(chan *hubble.MessageCapsule) //not buffered for testing
 		defer close(channel)
 
 		sessions[initiator.GUID] = channel
-
+		defer delete(sessions, initiator.GUID)
+		
 		serveSession(initiator.GUID, conn, channel, socket)
 	} ()
 }
@@ -46,15 +49,28 @@ func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 
 	go func() {
 		//socket -> proxy 
-		defer func(){
+
+		defer func() {
 			wg.Done()
-			//force the receiver routine to exit
+			//send teminator to local channel (in case it still waiting)
+			defer func() {
+				recover()
+			} ()
+			
+			conn.Send(hubble.CONNECTION_CLOSED_MESSAGE_TYPE,
+					  &hubble.ConnectionClosedMessage{
+					  	 GuidMessage: hubble.GuidMessage{guid},
+					  })
+
+			//force closing the local receiver
 			channel <- &hubble.MessageCapsule{
-				Mtype: hubble.INVALID_MESSAGE_TYPE,
+				Mtype: hubble.TERMINATOR_MESSAGE_TYPE,
 			}
-		}()
+		} ()
 		
 		buffer := make([]byte, 1024)
+		order := 1
+
 		for {
 			count, read_err := socket.Read(buffer)
 			if read_err != nil && read_err != io.EOF {
@@ -64,11 +80,15 @@ func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 
 			err := conn.Send(hubble.DATA_MESSAGE_TYPE, &hubble.DataMessage{
 				GuidMessage: hubble.GuidMessage{guid},
+				Order: order,
 				Data: buffer[:count],
 			})
 
+			order ++
+
 			if err != nil {
 				//failed to forward data to proxy
+				log.Println(err)
 				return
 			}
 
@@ -80,12 +100,16 @@ func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 
 	go func() {
 		//proxy -> socket
-		defer wg.Done()
-		
+
+		defer func() {
+			wg.Done()
+		}()
+
+		lastOrder := 0
 		for {
 			msgCap, ok := <- channel
 			//send on open socket.
-			if !ok || msgCap.Mtype == hubble.INVALID_MESSAGE_TYPE || msgCap.Mtype == hubble.TERMINATOR_MESSAGE_TYPE {
+			if !ok || msgCap.Mtype == hubble.TERMINATOR_MESSAGE_TYPE {
 				//force socket termination
 				socket.Close()
 				return
@@ -93,10 +117,19 @@ func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 
 			if msgCap.Mtype == hubble.DATA_MESSAGE_TYPE {
 				data := msgCap.Message.(*hubble.DataMessage)
+				if lastOrder + 1 != data.Order {
+					log.Println("Data out of order")
+					socket.Close()
+					return
+				}
+
+				lastOrder = data.Order
+
 				written := 0
-				for len(data.Data) != written {
+				for written < len(data.Data) {
 					count, err := socket.Write(data.Data[written:])
 					if err != nil {
+						log.Println(err)
 						return
 					}
 
@@ -107,5 +140,5 @@ func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 	}()
 
 	wg.Wait()
-	log.Printf("Session '%v' server terminates", guid)
+	log.Printf("Session '%v' routines terminates", guid)
 }

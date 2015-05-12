@@ -30,8 +30,8 @@ func initiatorMessage(gw *gateway, mtype uint8, message interface{}) {
 	}
 }
 
-func terminatorMessage(gw *gateway, mtype uint8, message interface{}) {
-	terminator := message.(*hubble.TerminatorMessage)
+func connectionClosedMessage(gw *gateway, mtype uint8, message interface{}) {
+	terminator := message.(*hubble.ConnectionClosedMessage)
 	log.Println("Ending Session:", gw, terminator)
 	gw.closeSession(terminator)
 }
@@ -41,9 +41,26 @@ func forward(gw *gateway, mtype uint8, message interface{}) {
 	gw.forward(msg.GetGUID(), mtype, message)
 }
 
+
+// var orders = make(map[string]int)
+
+// func debug_forward(gw *gateway, mtype uint8, message interface{}) {
+// 	msg := message.(*hubble.DataMessage)
+// 	guid := msg.GetGUID()
+// 	key := fmt.Sprintf("%s-%s", gw.handshake.Name, guid)
+// 	order := orders[key]
+
+// 	if order + 1 != msg.Order {
+// 		panic(fmt.Sprintf("session (%s) data are out of order", key))
+// 	}
+	
+// 	orders[key] = msg.Order
+// 	gw.forward(guid, mtype, message)
+// }
+
 var messageHandlers = map[uint8] func (*gateway, uint8, interface{}) {
 	hubble.INITIATOR_MESSAGE_TYPE: initiatorMessage,
-	hubble.TERMINATOR_MESSAGE_TYPE: terminatorMessage,
+	hubble.CONNECTION_CLOSED_MESSAGE_TYPE: connectionClosedMessage,
 	hubble.DATA_MESSAGE_TYPE: forward,
 	hubble.ACK_MESSAGE_TYPE: forward,
 }
@@ -102,12 +119,14 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	for {
 		mtype, message, err := conn.Receive()
 		if err != nil {
+			log.Println(err)
 			break
 		}
 
 		msgHandler, ok := messageHandlers[mtype]
 		if !ok {
 			log.Println("Unknown message type:", mtype)
+			continue
 		}
 
 		msgHandler(gw, mtype, message)

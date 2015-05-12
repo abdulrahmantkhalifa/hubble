@@ -136,28 +136,35 @@ func TestIntegration(t *testing.T) {
 	//and then calculate md5sum of the downloaded files to make sure
 	//they are all okay.
 
+	var downloadWg sync.WaitGroup
+	downloadWg.Add(NUM_FILES)
 	for i := 0; i < NUM_FILES; i++ {
 		fname := fmt.Sprintf("file-%d", i)
-		//we go over the forwarded port of course
-		response, err := http.Get(fmt.Sprintf("http://localhost:8888/%s", fname))
-		if err != nil {
-			t.Error(err)
-		}
+		func () {
+			defer downloadWg.Done()
+			//we go over the forwarded port of course
+			response, err := http.Get(fmt.Sprintf("http://localhost:7777/%s", fname))
+			if err != nil {
+				t.Error(err)
+			}
 
-		defer response.Body.Close()
-		
-		if response.StatusCode != 200 {
-			t.Error("Invalid status code")
-		}
+			defer response.Body.Close()
+			
+			if response.StatusCode != 200 {
+				t.Error("Invalid status code")
+			}
 
-		downloaded_hash, err := md5sum_r(response.Body)
-		if err != nil {
-			t.Error(err)
-		}
+			downloaded_hash, err := md5sum_r(response.Body)
+			if err != nil {
+				t.Error(err)
+			}
 
-		if hashes[fname] != downloaded_hash {
-			t.Errorf("File: %s with has %s has wrong downloaded hash %s",
-					 fname, hashes[fname], downloaded_hash)
-		}
+			if hashes[fname] != downloaded_hash {
+				t.Errorf("File: %s with has %s has wrong downloaded hash %s",
+						 fname, hashes[fname], downloaded_hash)
+			}
+		} ()
 	}
+	t.Log("Waiting for downloads to finish")
+	downloadWg.Wait()
 }

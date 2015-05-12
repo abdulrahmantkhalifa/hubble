@@ -38,7 +38,7 @@ func dispatch(mtype uint8, message hubble.SessionMessage) {
 		} ()
 		session := sessions[message.GetGUID()]
 
-		if session == nil {
+		if session == nil && mtype != hubble.TERMINATOR_MESSAGE_TYPE {
 			log.Println("Message to unknow session received: ", message.GetGUID(), mtype)
 			return
 		}
@@ -75,9 +75,7 @@ func Agent(name string, key string, url string, tunnels []*Tunnel) {
 			}
 			switch mtype {
 				case hubble.INITIATOR_MESSAGE_TYPE:
-					//TODO: Make a connection to service.
 					initiator := message.(*hubble.InitiatorMessage)
-					//send ack (debug)
 					startLocalSession(conn, initiator)
 				default:
 					dispatch(mtype, message.(hubble.SessionMessage))

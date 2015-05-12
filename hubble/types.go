@@ -12,6 +12,7 @@ const HANDSHAKE_MESSAGE_TYPE uint8 = 1
 const INITIATOR_MESSAGE_TYPE uint8 = 2
 const DATA_MESSAGE_TYPE uint8 = 3
 const TERMINATOR_MESSAGE_TYPE uint8 = 4
+const CONNECTION_CLOSED_MESSAGE_TYPE uint8 = 5
 
 const ACK_MESSAGE_TYPE uint8 = 255
 
@@ -56,6 +57,7 @@ type InitiatorMessage struct {
 //Data message
 type DataMessage struct {
 	GuidMessage
+	Order int
 	Data []byte
 }
 
@@ -63,6 +65,8 @@ type DataMessage struct {
 type TerminatorMessage struct {
 	GuidMessage
 }
+
+type ConnectionClosedMessage TerminatorMessage
 
 //Ack message
 type AckMessage struct {
@@ -92,6 +96,9 @@ var MessageTypes = map[uint8]func() interface{} {
 	},
 	TERMINATOR_MESSAGE_TYPE: func() interface{} {
 		return new(TerminatorMessage)
+	},
+	CONNECTION_CLOSED_MESSAGE_TYPE: func() interface{} {
+		return new(ConnectionClosedMessage)
 	},
 	ACK_MESSAGE_TYPE: func() interface{} {
 		return new(AckMessage)
