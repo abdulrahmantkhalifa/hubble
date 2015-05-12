@@ -140,7 +140,7 @@ func TestIntegration(t *testing.T) {
 	downloadWg.Add(NUM_FILES)
 	for i := 0; i < NUM_FILES; i++ {
 		fname := fmt.Sprintf("file-%d", i)
-		func () {
+		go func () {
 			defer downloadWg.Done()
 			//we go over the forwarded port of course
 			response, err := http.Get(fmt.Sprintf("http://localhost:7777/%s", fname))
