@@ -4,10 +4,14 @@ package main
 import (
 	"hubble/agent"
 	"log"
+	"fmt"
 	"net"
 	"flag"
 	"regexp"
+	"crypto/tls"
+	"crypto/x509"
 	"strconv"
+	"io/ioutil"
 )
 
 
@@ -16,11 +20,26 @@ func main() {
 	var url string
 	var name string
 	var key string
+	var ca string
 
+	var help bool
+
+	flag.BoolVar(&help, "h", false, "Print this help screen")
 	flag.StringVar(&url, "url", "", "WebSocket url to proxy server in form 'ws://host:port/path")
 	flag.StringVar(&name, "name", "", "Agent name, will be used by other agents to redirect connections to this agent")
 	flag.StringVar(&key, "key", "", "Agent key")
+	flag.StringVar(&ca, "ca", "", "Certificate Autority to trust")
 	flag.Parse()
+
+	printHelp := func() {
+		fmt.Println("agent [options] [[local port:gateway:remot ip:remot port]...]")
+		flag.PrintDefaults()
+	}
+
+	if help {
+		printHelp()
+		return
+	}
 
 	tunnels_def := flag.Args()
 	tunnels := make([]*agent.Tunnel, 0)
@@ -49,16 +68,31 @@ func main() {
 	}
 
 	if url == "" {
-		flag.PrintDefaults()
+		printHelp()
 		log.Fatal("Missing url")
 	}
 
 	if name == "" {
-		flag.PrintDefaults()
+		printHelp()
 		log.Fatal("Missing name")
 	}
 
-	agent.Agent(name, key, url, tunnels)
+	var config tls.Config
+
+	if ca != "" {
+		pem, err := ioutil.ReadFile(ca)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		config.RootCAs = x509.NewCertPool()
+		config.RootCAs.AppendCertsFromPEM(pem)
+	}
+
+	err := agent.Agent(name, key, url, tunnels, &config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	//wait forever
 	select {}

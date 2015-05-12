@@ -56,7 +56,6 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	mtype, message, err := conn.Receive()
 	
 	if err != nil {
-		log.Println(err)
 		return
 	}
 
@@ -102,7 +101,6 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	for {
 		mtype, message, err := conn.Receive()
 		if err != nil {
-			log.Println(err)
 			break
 		}
 

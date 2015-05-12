@@ -3,6 +3,7 @@ package agent
 import (
 	"hubble"
 	"log"
+	"crypto/tls"
 )
 
 
@@ -52,17 +53,17 @@ func dispatch(sessions sessionsStore, mtype uint8, message hubble.SessionMessage
 	session <- capsule
 }
 
-func Agent(name string, key string, url string, tunnels []*Tunnel) {
+func Agent(name string, key string, url string, tunnels []*Tunnel,config *tls.Config) (err error) {
 	//1- intialize connection to proxy
-	conn, err := hubble.NewProxyConnection(url)
+	conn, err := hubble.NewProxyConnection(url, config)
 	if err != nil {
-		log.Fatal("Failed to connect to proxy", err)
+		return
 	}
 	
 	//2- registration
 	err = handshake(conn, name, key)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	sessions := make(sessionsStore)
@@ -89,4 +90,6 @@ func Agent(name string, key string, url string, tunnels []*Tunnel) {
 	for _, tunnel := range tunnels {
 		tunnel.serve(sessions, conn)
 	}
+
+	return nil
 }
