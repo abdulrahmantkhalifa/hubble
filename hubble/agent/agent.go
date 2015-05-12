@@ -28,7 +28,7 @@ func handshake(conn *hubble.Connection, agentname string, key string) error {
 	return nil
 }
 
-func dispatch(mtype uint8, message hubble.SessionMessage) {
+func dispatch(sessions sessionsStore, mtype uint8, message hubble.SessionMessage) {
 	defer func () {
 		if err := recover(); err != nil {
 			//Can't send data to session channel?!. Please don't panic, chill out and 
@@ -65,6 +65,8 @@ func Agent(name string, key string, url string, tunnels []*Tunnel) {
 		log.Fatal(err)
 	}
 
+	sessions := make(sessionsStore)
+
 	go func () {
 		//receive all messages.
 		log.Println("Start receiving loop")
@@ -77,14 +79,14 @@ func Agent(name string, key string, url string, tunnels []*Tunnel) {
 			switch mtype {
 				case hubble.INITIATOR_MESSAGE_TYPE:
 					initiator := message.(*hubble.InitiatorMessage)
-					startLocalSession(conn, initiator)
+					startLocalSession(sessions, conn, initiator)
 				default:
-					dispatch(mtype, message.(hubble.SessionMessage))
+					dispatch(sessions, mtype, message.(hubble.SessionMessage))
 			}
 		}
 	}()
 
 	for _, tunnel := range tunnels {
-		tunnel.serve(conn)
+		tunnel.serve(sessions, conn)
 	}
 }

@@ -9,16 +9,16 @@ import (
 	"log"
 )
 
-const sessionQueueSize = 512
-var sessions = make(map[string]chan *hubble.MessageCapsule)
+type sessionChannel chan *hubble.MessageCapsule
+type sessionsStore map[string]sessionChannel
 
-func registerSession(guid string) chan *hubble.MessageCapsule {
+func registerSession(sessions sessionsStore, guid string) chan *hubble.MessageCapsule {
 	channel := make(chan *hubble.MessageCapsule)
 	sessions[guid] = channel
 	return channel
 }
 
-func unregisterSession(guid string) {
+func unregisterSession(sessions sessionsStore, guid string) {
 	channel, ok := sessions[guid]
 	if ok {
 		delete(sessions, guid)
@@ -27,7 +27,7 @@ func unregisterSession(guid string) {
 }
 
 
-func startLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
+func startLocalSession(sessions sessionsStore, conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
 	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
 	go func() {
 		//make local connection
@@ -40,14 +40,14 @@ func startLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessa
 
 		defer socket.Close()
 
-		channel := registerSession(initiator.GUID)
-		defer unregisterSession(initiator.GUID)
+		channel := registerSession(sessions, initiator.GUID)
+		defer unregisterSession(sessions, initiator.GUID)
 
 		serveSession(initiator.GUID, conn, channel, socket)
 	} ()
 }
 
-func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.MessageCapsule, socket net.Conn) {
+func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, socket net.Conn) {
 	log.Println("Starting routines for session", guid)
 
 	var wg sync.WaitGroup

@@ -32,7 +32,7 @@ func (tunnel *Tunnel) String() string {
 }
 
 //Open the tunnel on local side and server over the given connection to the proxy.
-func (tunnel *Tunnel) serve(conn *hubble.Connection) {
+func (tunnel *Tunnel) serve(sessions sessionsStore, conn *hubble.Connection) {
 	go func() {
 		// open socket and wait for connections
 		listner, err := net.Listen("tcp", fmt.Sprintf(":%d", tunnel.local))
@@ -50,12 +50,12 @@ func (tunnel *Tunnel) serve(conn *hubble.Connection) {
 				socket.Close()
 			}
 
-			go tunnel.handle(conn, socket)
+			go tunnel.handle(sessions, conn, socket)
 		}
 	}()
 }
 
-func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
+func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, socket net.Conn) {
 	guid := uuid.New()
 	
 	defer func() {
@@ -63,8 +63,8 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 		socket.Close()
 	}()
 	
-	channel := registerSession(guid)
-	defer unregisterSession(guid)
+	channel := registerSession(sessions, guid)
+	defer unregisterSession(sessions, guid)
 
 	//1- send initiator message ...
 	log.Printf("Starting session %v on tunnel %v", guid, tunnel)
