@@ -60,18 +60,11 @@ func (tunnel *Tunnel) handle(conn *hubble.Connection, socket net.Conn) {
 	
 	defer func() {
 		log.Printf("Session %v on tunnel %v terminated\n", guid, tunnel)
-		delete(sessions, guid)
-		// conn.Send(hubble.TERMINATOR_MESSAGE_TYPE, &hubble.TerminatorMessage{
-		// 	GuidMessage: hubble.GuidMessage{guid},
-		// })
 		socket.Close()
 	}()
 	
-	//channel := make(chan *hubble.MessageCapsule, sessionQueueSize)
-	channel := make(chan *hubble.MessageCapsule) //not buffered for testing
-	defer close(channel)
-
-	sessions[guid] = channel
+	channel := registerSession(guid)
+	defer unregisterSession(guid)
 
 	//1- send initiator message ...
 	log.Printf("Starting session %v on tunnel %v", guid, tunnel)

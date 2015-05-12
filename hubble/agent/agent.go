@@ -29,26 +29,27 @@ func handshake(conn *hubble.Connection, agentname string, key string) error {
 }
 
 func dispatch(mtype uint8, message hubble.SessionMessage) {
-	go func() {
-		defer func (){
-			if err := recover(); err != nil {
-				//Can't send data to session channel?!. Please don't panic, chill out and 
-				//relax, it's probably closed. Do nothing.
-			}
-		} ()
-		session := sessions[message.GetGUID()]
+	defer func () {
+		if err := recover(); err != nil {
+			//Can't send data to session channel?!. Please don't panic, chill out and 
+			//relax, it's probably closed. Do nothing.
+		}
+	} ()
+	session, ok := sessions[message.GetGUID()]
 
-		if session == nil && mtype != hubble.TERMINATOR_MESSAGE_TYPE {
+	if !ok {
+		if mtype != hubble.TERMINATOR_MESSAGE_TYPE {
 			log.Println("Message to unknow session received: ", message.GetGUID(), mtype)
-			return
 		}
 
-		capsule := new(hubble.MessageCapsule)
-		capsule.Mtype = mtype
-		capsule.Message = message
+		return
+	}
 
-		session <- capsule
-	}()
+	capsule := new(hubble.MessageCapsule)
+	capsule.Mtype = mtype
+	capsule.Message = message
+
+	session <- capsule
 }
 
 func Agent(name string, key string, url string, tunnels []*Tunnel) {

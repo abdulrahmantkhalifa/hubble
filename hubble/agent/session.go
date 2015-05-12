@@ -12,16 +12,24 @@ import (
 const sessionQueueSize = 512
 var sessions = make(map[string]chan *hubble.MessageCapsule)
 
+func registerSession(guid string) chan *hubble.MessageCapsule {
+	channel := make(chan *hubble.MessageCapsule)
+	sessions[guid] = channel
+	return channel
+}
+
+func unregisterSession(guid string) {
+	channel, ok := sessions[guid]
+	if ok {
+		delete(sessions, guid)
+		close(channel)
+	}
+}
+
+
 func startLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
 	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
 	go func() {
-		// defer func(){
-		// 	//send terminator message.
-		// 	conn.Send(hubble.TERMINATOR_MESSAGE_TYPE, &hubble.TerminatorMessage {
-		// 		GuidMessage: hubble.GuidMessage{initiator.GUID},
-		// 	})
-		// }()
-
 		//make local connection
 		socket, err := net.Dial("tcp", fmt.Sprintf("%s:%d", initiator.Ip, initiator.Port))
 		conn.SendAckOrError(initiator.GUID, err)
@@ -32,18 +40,16 @@ func startLocalSession(conn *hubble.Connection, initiator *hubble.InitiatorMessa
 
 		defer socket.Close()
 
-		//channel := make(chan *hubble.MessageCapsule, sessionQueueSize)
-		channel := make(chan *hubble.MessageCapsule) //not buffered for testing
-		defer close(channel)
+		channel := registerSession(initiator.GUID)
+		defer unregisterSession(initiator.GUID)
 
-		sessions[initiator.GUID] = channel
-		defer delete(sessions, initiator.GUID)
-		
 		serveSession(initiator.GUID, conn, channel, socket)
 	} ()
 }
 
 func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.MessageCapsule, socket net.Conn) {
+	log.Println("Starting routines for session", guid)
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -77,7 +83,6 @@ func serveSession(guid string, conn *hubble.Connection, channel chan *hubble.Mes
 				//log.Printf("Failer on session %v %v: %v", guid, tunnel, read_err)
 				return
 			}
-
 			err := conn.Send(hubble.DATA_MESSAGE_TYPE, &hubble.DataMessage{
 				GuidMessage: hubble.GuidMessage{guid},
 				Order: order,
