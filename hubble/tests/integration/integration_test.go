@@ -158,6 +158,7 @@ func TestIntegration(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+			t.Log(fname, hashes[fname], downloaded_hash)
 
 			if hashes[fname] != downloaded_hash {
 				t.Errorf("File: %s with has %s has wrong downloaded hash %s",
