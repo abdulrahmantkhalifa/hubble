@@ -75,14 +75,14 @@ func TestMain(m *testing.M) {
 	wg.Wait()
 
 	//start 1st agents
-	//the first agent a1 should serve tunnel 7777:gw2:127.0.0.1:8888
-	tunnel := agent.NewTunnel(7777, "gw2", net.ParseIP("127.0.0.1"), 8888)
+	//the first agent a1 should serve tunnel 7777:gw2:127.0.0.1:5555
+	tunnel := agent.NewTunnel(7777, "gw2", net.ParseIP("127.0.0.1"), 5555)
 
 	agent.Agent("gw1", "", "ws://localhost:9999/", []*agent.Tunnel{tunnel}, nil)
 	//start second agent
 	agent.Agent("gw2", "", "ws://localhost:9999/", make([]*agent.Tunnel, 0), nil)
 
-	//now we need to start a file server that serves on port 8888
+	//now we need to start a file server that serves on port 5555
 	tempdir := fmt.Sprintf("%s/%s", os.TempDir(), "hubble_t")
 	err := os.MkdirAll(tempdir, os.ModeDir | os.ModePerm)
 	if err != nil {
@@ -96,7 +96,7 @@ func TestMain(m *testing.M) {
 
 	go func () {
 		defer wg.Done()
-		listner, err := net.Listen("tcp", ":8888")
+		listner, err := net.Listen("tcp", ":5555")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
