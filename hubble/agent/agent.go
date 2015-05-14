@@ -9,13 +9,10 @@ import (
 
 //Handshake
 func handshake(conn *hubble.Connection, agentname string, key string) error {
-	message := hubble.HandshakeMessage {
-		Version: hubble.PROTOCOL_VERSION_0_1,
-		Name: agentname,
-		Key: key,
-	}
+	
+	message := hubble.NewHandshakeMessage(agentname, key)
 
-	err := conn.Send(hubble.HANDSHAKE_MESSAGE_TYPE, &message)
+	err := conn.Send(message)
 	if err != nil {
 		return err
 	}
@@ -29,7 +26,7 @@ func handshake(conn *hubble.Connection, agentname string, key string) error {
 	return nil
 }
 
-func dispatch(sessions sessionsStore, mtype uint8, message hubble.SessionMessage) {
+func dispatch(sessions sessionsStore, message hubble.SessionMessage) {
 	defer func () {
 		if err := recover(); err != nil {
 			//Can't send data to session channel?!. Please don't panic, chill out and 
@@ -39,18 +36,14 @@ func dispatch(sessions sessionsStore, mtype uint8, message hubble.SessionMessage
 	session, ok := sessions[message.GetGUID()]
 
 	if !ok {
-		if mtype != hubble.TERMINATOR_MESSAGE_TYPE {
-			log.Println("Message to unknow session received: ", message.GetGUID(), mtype)
+		if message.GetMessageType() != hubble.TERMINATOR_MESSAGE_TYPE {
+			log.Println("Message to unknow session received: ", message.GetGUID(), message.GetMessageType())
 		}
 
 		return
 	}
 
-	capsule := new(hubble.MessageCapsule)
-	capsule.Mtype = mtype
-	capsule.Message = message
-
-	session <- capsule
+	session <- message
 }
 
 func Agent(name string, key string, url string, tunnels []*Tunnel,config *tls.Config) (err error) {
@@ -72,17 +65,17 @@ func Agent(name string, key string, url string, tunnels []*Tunnel,config *tls.Co
 		//receive all messages.
 		log.Println("Start receiving loop")
 		for {
-			mtype, message, err := conn.Receive()
+			message, err := conn.Receive()
 			if err != nil {
 				//we should check error types to take a decistion. for now just exit
 				log.Fatalf("Receive loop failed: %v", err)
 			}
-			switch mtype {
+			switch message.GetMessageType() {
 				case hubble.INITIATOR_MESSAGE_TYPE:
 					initiator := message.(*hubble.InitiatorMessage)
 					startLocalSession(sessions, conn, initiator)
 				default:
-					dispatch(sessions, mtype, message.(hubble.SessionMessage))
+					dispatch(sessions, message.(hubble.SessionMessage))
 			}
 		}
 	}()

@@ -22,7 +22,7 @@ type gateway struct {
 	handshake *hubble.HandshakeMessage
 	connection *hubble.Connection
 	terminals map[string]*terminal
-	channel chan *hubble.MessageCapsule
+	channel chan hubble.Message
 }
 
 
@@ -34,8 +34,7 @@ func newGateway(connection *hubble.Connection,
 	gw.connection = connection
 	gw.handshake = handshake
 	gw.terminals = make(map[string]*terminal)
-	//gw.channel = make(chan *hubble.MessageCapsule, GatewayQueueSize)
-	gw.channel = make(chan *hubble.MessageCapsule) //unbuffered for testing
+	gw.channel = make(chan hubble.Message)
 	return gw
 }
 
@@ -83,10 +82,7 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 
 	endGw.terminals[intiator.GUID] = startTerm
 
-	endTerm.forward(&hubble.MessageCapsule {
-		Mtype: hubble.INITIATOR_MESSAGE_TYPE,
-		Message: intiator,
-	})
+	endTerm.forward(intiator)
 
 	return nil
 }
@@ -110,19 +106,16 @@ func (gw *gateway) closeSession(terminator *hubble.ConnectionClosedMessage) {
 	}
 }
 
-func (gw *gateway) forward(guid string, mtype uint8, message interface{}) {
+func (gw *gateway) forward(guid string, message hubble.Message) {
 	terminal, ok := gw.terminals[guid]
 	if !ok {
 		return
 	}
 
-	terminal.forward(&hubble.MessageCapsule{
-		Mtype: mtype,
-		Message: message,
-	})
+	terminal.forward(message)
 }
 
-func (term terminal) forward(message *hubble.MessageCapsule) {
+func (term terminal) forward(message hubble.Message) {
 	defer func() {
 		if err := recover(); err != nil {
 			//propable channel is closed.
@@ -134,10 +127,6 @@ func (term terminal) forward(message *hubble.MessageCapsule) {
 }
 
 func (term terminal) terminate() {
-	term.forward(&hubble.MessageCapsule{
-		Mtype: hubble.TERMINATOR_MESSAGE_TYPE,
-		Message: &hubble.TerminatorMessage{
-			GuidMessage: hubble.GuidMessage{term.guid},
-		},
-	})
+	terminate := hubble.NewTerminatorMessage(term.guid)
+	term.forward(terminate)
 }

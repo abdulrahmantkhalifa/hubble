@@ -18,7 +18,7 @@ var upgrader = websocket.Upgrader {
 }
 
 
-func initiatorMessage(gw *gateway, mtype uint8, message interface{}) {
+func initiatorMessage(gw *gateway, message hubble.Message) {
 	initiator := message.(*hubble.InitiatorMessage)
 	log.Println("New Session", initiator)
 	err := gw.openSession(initiator)
@@ -30,18 +30,18 @@ func initiatorMessage(gw *gateway, mtype uint8, message interface{}) {
 	}
 }
 
-func connectionClosedMessage(gw *gateway, mtype uint8, message interface{}) {
+func connectionClosedMessage(gw *gateway, message hubble.Message) {
 	terminator := message.(*hubble.ConnectionClosedMessage)
 	log.Println("Ending Session:", gw, terminator)
 	gw.closeSession(terminator)
 }
 
-func forward(gw *gateway, mtype uint8, message interface{}) {
+func forward(gw *gateway, message hubble.Message) {
 	msg := message.(hubble.SessionMessage)
-	gw.forward(msg.GetGUID(), mtype, message)
+	gw.forward(msg.GetGUID(), message)
 }
 
-var messageHandlers = map[uint8] func (*gateway, uint8, interface{}) {
+var messageHandlers = map[hubble.MessageType] func (*gateway, hubble.Message) {
 	hubble.INITIATOR_MESSAGE_TYPE: initiatorMessage,
 	hubble.CONNECTION_CLOSED_MESSAGE_TYPE: connectionClosedMessage,
 	hubble.DATA_MESSAGE_TYPE: forward,
@@ -53,14 +53,14 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	defer conn.Close()
 
 	//1- Handshake
-	mtype, message, err := conn.Receive()
+	message, err := conn.Receive()
 	
 	if err != nil {
 		return
 	}
 
-	if mtype != hubble.HANDSHAKE_MESSAGE_TYPE {
-		log.Println(fmt.Sprintf("Expecting handshake message, got %v", mtype))
+	if message.GetMessageType() != hubble.HANDSHAKE_MESSAGE_TYPE {
+		log.Println(fmt.Sprintf("Expecting handshake message, got %v", message.GetMessageType()))
 		return
 	}
 
@@ -90,7 +90,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 				return
 			}
 
-			err := conn.Send(msgCap.Mtype, msgCap.Message)
+			err := conn.Send(msgCap)
 			if err != nil {
 				log.Println("Failed to forward message to gateway:", gw)
 			}
@@ -99,18 +99,18 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 	//dispatch loop
 	for {
-		mtype, message, err := conn.Receive()
+		message, err := conn.Receive()
 		if err != nil {
 			break
 		}
 
-		msgHandler, ok := messageHandlers[mtype]
+		msgHandler, ok := messageHandlers[message.GetMessageType()]
 		if !ok {
-			log.Println("Unknown message type:", mtype)
+			log.Println("Unknown message type:", message.GetMessageType())
 			continue
 		}
 
-		msgHandler(gw, mtype, message)
+		msgHandler(gw, message)
 	}
 }
 //The http handler for the websockets

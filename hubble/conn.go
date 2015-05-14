@@ -45,7 +45,7 @@ func NewConnection(ws *websocket.Conn) *Connection {
 }
 
 
-func (conn *Connection) Send(mtype uint8, message interface{}) error {
+func (conn *Connection) Send(message Message) error {
 	conn.wlock.Lock()
 	defer conn.wlock.Unlock()
 	writer, err := conn.ws.NextWriter(websocket.BinaryMessage)
@@ -54,43 +54,38 @@ func (conn *Connection) Send(mtype uint8, message interface{}) error {
 		return err
 	}
 
-	return dumps(writer, mtype, message)
+	return dumps(writer, message)
 }
 
-func (conn *Connection) Receive() (uint8, interface{}, error) {
+func (conn *Connection) Receive() (Message, error) {
 	conn.rlock.Lock()
 	defer conn.rlock.Unlock()
 	mode, reader, err := conn.ws.NextReader()
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
 	if mode != websocket.BinaryMessage {
 		//only binary messages are supported.
-		return 0, nil, unexpectedMessageFormat
+		return nil, unexpectedMessageFormat
 	}
 
 	return loads(reader)
 }
 
 func (conn *Connection) SendAckOrError(guid string, err error) error {
-	//message := &AckMessage{GuidMessage{guid}}
-
-	return conn.Send(ACK_MESSAGE_TYPE, &AckMessage {
-		GuidMessage: GuidMessage{guid},
-		Ok: err == nil,
-		Message: fmt.Sprintf("%v", err),
-	})
+	ack := NewAckMessage(guid, err == nil, fmt.Sprintf("%v", err))
+	return conn.Send(ack)
 }
 
 func (conn *Connection) ReceiveAck() error {
 	//read ack.
-	mtype, reply, err := conn.Receive()
+	reply, err := conn.Receive()
 	if err != nil {
 		return err
 	}
 
-	if mtype != ACK_MESSAGE_TYPE {
+	if reply.GetMessageType() != ACK_MESSAGE_TYPE {
 		return unexpectedMessageType
 	}
 

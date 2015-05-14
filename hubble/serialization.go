@@ -2,16 +2,15 @@ package hubble
 
 import (
 	"io"
-	"errors"
 	"github.com/ugorji/go/codec"
 )
 
 var msgHandle = new(codec.MsgpackHandle)
 
 //Dumps a message to writer. flag it with the given type
-func dumps(writer io.Writer, mtype uint8, message interface{}) error {
+func dumps(writer io.Writer, message Message) error {
 	//send type byte.
-	writer.Write([]byte{mtype})
+	writer.Write([]byte{uint8(message.GetMessageType())})
 
 	var encoder = codec.NewEncoder(writer, msgHandle)
 
@@ -19,26 +18,25 @@ func dumps(writer io.Writer, mtype uint8, message interface{}) error {
 }
 
 //Loads a message from a reader, assuming first byte is the message types.
-func loads(reader io.Reader) (uint8, interface{}, error) {
+func loads(reader io.Reader) (Message, error) {
 	var mtype = make([]byte, 1)
 	_, err := reader.Read(mtype)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
-	initiator, ok := MessageTypes[mtype[0]]
-	if !ok {
-		return mtype[0], nil, errors.New("Invalid mtype")
+	msg, err := NewMessage(MessageType(mtype[0]))
+	
+	if err != nil {
+		return nil, err
 	}
 
 	decoder := codec.NewDecoder(reader, msgHandle)
-	var value = initiator()
-	//var loaded int
 	
-	derr := decoder.Decode(value)
-	if derr != nil {
-		return mtype[0], nil, derr
+	err = decoder.Decode(msg)
+	if err != nil {
+		return nil, err
 	}
 
-	return mtype[0], value, nil
+	return msg, nil
 }

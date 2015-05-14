@@ -69,12 +69,8 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	//1- send initiator message ...
 	log.Printf("Starting session %v on tunnel %v", guid, tunnel)
 
-	err := conn.Send(hubble.INITIATOR_MESSAGE_TYPE, &hubble.InitiatorMessage {
-		GuidMessage: hubble.GuidMessage{guid},
-		Ip: tunnel.ip,
-		Port: tunnel.remote,
-		Gatename: tunnel.gateway,
-	})
+	err := conn.Send(hubble.NewInitiatorMessage(guid,
+		tunnel.ip, tunnel.remote, tunnel.gateway))
 	
 	if err != nil {
 		log.Printf("Failed to start session %v to %v: %v\n", guid, tunnel, err)
@@ -86,13 +82,13 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	//2- recieve ack
 	log.Println("Waiting for ack from:", tunnel.gateway)
 	select {
-		case msgCap, ok := <- channel:
-			if !ok || msgCap.Mtype != hubble.ACK_MESSAGE_TYPE {
-				log.Println("Expecting ack message, got: ", msgCap.Mtype)
+		case message, ok := <- channel:
+			if !ok || message.GetMessageType() != hubble.ACK_MESSAGE_TYPE {
+				log.Println("Expecting ack message, got: ", message.GetMessageType())
 				return
 			}
 
-			ack := msgCap.Message.(*hubble.AckMessage)
+			ack := message.(*hubble.AckMessage)
 			if !ack.Ok {
 				//failed to start session!
 				return

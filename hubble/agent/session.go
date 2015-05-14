@@ -9,11 +9,11 @@ import (
 	"log"
 )
 
-type sessionChannel chan *hubble.MessageCapsule
+type sessionChannel chan hubble.Message
 type sessionsStore map[string]sessionChannel
 
-func registerSession(sessions sessionsStore, guid string) chan *hubble.MessageCapsule {
-	channel := make(chan *hubble.MessageCapsule)
+func registerSession(sessions sessionsStore, guid string) sessionChannel {
+	channel := make(sessionChannel)
 	sessions[guid] = channel
 	return channel
 }
@@ -63,19 +63,14 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 				recover()
 			} ()
 			
-			conn.Send(hubble.CONNECTION_CLOSED_MESSAGE_TYPE,
-					  &hubble.ConnectionClosedMessage{
-					  	 GuidMessage: hubble.GuidMessage{guid},
-					  })
+			conn.Send(hubble.NewConnectionClosedMessage(guid))
 
 			//force closing the local receiver
-			channel <- &hubble.MessageCapsule{
-				Mtype: hubble.TERMINATOR_MESSAGE_TYPE,
-			}
+			channel <- hubble.NewTerminatorMessage(guid)
 		} ()
 		
 		buffer := make([]byte, 1024)
-		order := 1
+		var order int64 = 1
 
 		for {
 			count, read_err := socket.Read(buffer)
@@ -83,12 +78,8 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 				//log.Printf("Failer on session %v %v: %v", guid, tunnel, read_err)
 				return
 			}
-			err := conn.Send(hubble.DATA_MESSAGE_TYPE, &hubble.DataMessage{
-				GuidMessage: hubble.GuidMessage{guid},
-				Order: order,
-				Data: buffer[:count],
-			})
-
+			
+			err := conn.Send(hubble.NewDataMessage(guid, order, buffer[:count]))
 			order ++
 
 			if err != nil {
@@ -110,18 +101,18 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 			wg.Done()
 		}()
 
-		lastOrder := 0
+		var lastOrder int64 = 0
 		for {
-			msgCap, ok := <- channel
+			message, ok := <- channel
 			//send on open socket.
-			if !ok || msgCap.Mtype == hubble.TERMINATOR_MESSAGE_TYPE {
+			if !ok || message.GetMessageType() == hubble.TERMINATOR_MESSAGE_TYPE {
 				//force socket termination
 				socket.Close()
 				return
 			}
 
-			if msgCap.Mtype == hubble.DATA_MESSAGE_TYPE {
-				data := msgCap.Message.(*hubble.DataMessage)
+			if message.GetMessageType() == hubble.DATA_MESSAGE_TYPE {
+				data := message.(*hubble.DataMessage)
 				if lastOrder + 1 != data.Order {
 					log.Println("Data out of order")
 					socket.Close()
