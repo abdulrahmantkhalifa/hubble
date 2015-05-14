@@ -21,25 +21,9 @@ const ACK_MESSAGE_TYPE MessageType = 255
 
 var unknownMessageType = errors.New("Unknow message type")
 
-
-
-// type MessageCapsule struct {
-// 	Mtype uint8
-// 	Message interface{}
-// }
-
 //Agent level messages
 type Message interface {
 	GetMessageType() MessageType
-}
-
-type TypedMessage struct {
-	mtype MessageType
-}
-
-
-func (msg *TypedMessage) GetMessageType() MessageType {
-	return msg.mtype
 }
 
 type SessionMessage interface {
@@ -52,54 +36,70 @@ type GuidMessage struct {
 	GUID string
 }
 
+func (msg *GuidMessage) GetGUID() string {
+	return msg.GUID
+}
+
 //Handshake message
 type HandshakeMessage struct {
-	TypedMessage
 	Version string
 	Name string
 	Key string
 }
 
-func (msg *GuidMessage) GetGUID() string {
-	return msg.GUID
+func (msg *HandshakeMessage) GetMessageType() MessageType {
+	return HANDSHAKE_MESSAGE_TYPE
 }
 
 //Initiator message
 type InitiatorMessage struct {
-	TypedMessage
 	GuidMessage
 	Ip net.IP
 	Port uint16
 	Gatename string
 }
 
+func (msg *InitiatorMessage) GetMessageType() MessageType {
+	return INITIATOR_MESSAGE_TYPE
+}
+
 //Data message
 type DataMessage struct {
-	TypedMessage
 	GuidMessage
 	Order int64
 	Data []byte
 }
 
+func (msg *DataMessage) GetMessageType() MessageType {
+	return DATA_MESSAGE_TYPE
+}
+
 //Terminator message
 type TerminatorMessage struct {
-	TypedMessage
 	GuidMessage
+}
+
+func (msg *TerminatorMessage) GetMessageType() MessageType {
+	return TERMINATOR_MESSAGE_TYPE
 }
 
 type ConnectionClosedMessage TerminatorMessage
 
+func (msg *ConnectionClosedMessage) GetMessageType() MessageType {
+	return CONNECTION_CLOSED_MESSAGE_TYPE
+}
+
 //Ack message
 type AckMessage struct {
-	TypedMessage
 	GuidMessage
 	Ok bool
 	Message string
 }
 
 func (msg *AckMessage) GetMessageType() MessageType {
-	return msg.mtype
+	return ACK_MESSAGE_TYPE
 }
+
 
 func (msg *InitiatorMessage) String() string {
 	return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.Ip, msg.Port, msg.GUID)
@@ -111,7 +111,6 @@ func (msg *TerminatorMessage) String() string {
 
 func NewHandshakeMessage(name string, key string) *HandshakeMessage {
 	return &HandshakeMessage {
-		TypedMessage: TypedMessage{HANDSHAKE_MESSAGE_TYPE},
 		Version: PROTOCOL_VERSION_0_1,
 		Name: name,
 		Key: key,
@@ -120,7 +119,6 @@ func NewHandshakeMessage(name string, key string) *HandshakeMessage {
 
 func NewInitiatorMessage(guid string, ip net.IP, port uint16, gatename string) *InitiatorMessage {
 	return &InitiatorMessage {
-		TypedMessage: TypedMessage{INITIATOR_MESSAGE_TYPE},
 		GuidMessage: GuidMessage{guid},
 		Ip: ip,
 		Port: port,
@@ -130,7 +128,6 @@ func NewInitiatorMessage(guid string, ip net.IP, port uint16, gatename string) *
 
 func NewDataMessage(guid string, order int64, data []byte) *DataMessage {
 	return &DataMessage{
-		TypedMessage: TypedMessage{DATA_MESSAGE_TYPE},
 		GuidMessage: GuidMessage{guid},
 		Order: order,
 		Data: data,
@@ -139,21 +136,18 @@ func NewDataMessage(guid string, order int64, data []byte) *DataMessage {
 
 func NewTerminatorMessage(guid string) *TerminatorMessage {
 	return &TerminatorMessage{
-		TypedMessage: TypedMessage{TERMINATOR_MESSAGE_TYPE},
 		GuidMessage: GuidMessage{guid},
 	}
 }
 
 func NewConnectionClosedMessage(guid string) *ConnectionClosedMessage {
 	return &ConnectionClosedMessage {
-		TypedMessage: TypedMessage{CONNECTION_CLOSED_MESSAGE_TYPE},
 		GuidMessage: GuidMessage{guid},
 	}
 }
 
 func NewAckMessage(guid string, ok bool, message string) *AckMessage {
 	return &AckMessage {
-		TypedMessage: TypedMessage{ACK_MESSAGE_TYPE},
 		GuidMessage: GuidMessage{guid},
 		Ok: ok,
 		Message: message,
@@ -162,34 +156,22 @@ func NewAckMessage(guid string, ok bool, message string) *AckMessage {
 
 var messageTypes = map[MessageType]func() Message {
 	HANDSHAKE_MESSAGE_TYPE: func() Message {
-		return &HandshakeMessage {
-			TypedMessage: TypedMessage{HANDSHAKE_MESSAGE_TYPE},
-		}
+		return &HandshakeMessage {}
 	},
 	INITIATOR_MESSAGE_TYPE: func() Message {
-		return &InitiatorMessage {
-			TypedMessage: TypedMessage{INITIATOR_MESSAGE_TYPE},
-		}
+		return &InitiatorMessage {}
 	},
 	DATA_MESSAGE_TYPE: func() Message {
-		return &DataMessage {
-			TypedMessage: TypedMessage{DATA_MESSAGE_TYPE},
-		}
+		return &DataMessage {}
 	},
 	TERMINATOR_MESSAGE_TYPE: func() Message {
-		return &TerminatorMessage {
-			TypedMessage: TypedMessage{TERMINATOR_MESSAGE_TYPE},
-		}
+		return &TerminatorMessage {}
 	},
 	CONNECTION_CLOSED_MESSAGE_TYPE: func() Message {
-		return &ConnectionClosedMessage{
-			TypedMessage: TypedMessage{CONNECTION_CLOSED_MESSAGE_TYPE},
-		}
+		return &ConnectionClosedMessage{}
 	},
 	ACK_MESSAGE_TYPE: func() Message {
-		return &AckMessage {
-			TypedMessage: TypedMessage{ACK_MESSAGE_TYPE},
-		}
+		return &AckMessage {}
 	},
 }
 
