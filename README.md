@@ -1,3 +1,5 @@
+[![build status](http://gitci.aydo.com/projects/1/status.png?ref=master)](http://gitci.aydo.com/projects/1?ref=master)
+
 Hubble
 ======
 
