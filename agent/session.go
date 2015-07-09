@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"hubble"
+	"git.aydo.com/0-complexity/hubble"
 	"net"
 	"fmt"
 	"sync"
@@ -54,7 +54,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 	wg.Add(2)
 
 	go func() {
-		//socket -> proxy 
+		//socket -> proxy
 
 		defer func() {
 			wg.Done()
@@ -62,13 +62,13 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 			defer func() {
 				recover()
 			} ()
-			
+
 			conn.Send(hubble.NewConnectionClosedMessage(guid))
 
 			//force closing the local receiver
 			channel <- hubble.NewTerminatorMessage(guid)
 		} ()
-		
+
 		buffer := make([]byte, 1024)
 		var order int64 = 1
 
@@ -78,7 +78,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 				//log.Printf("Failer on session %v %v: %v", guid, tunnel, read_err)
 				return
 			}
-			
+
 			err := conn.Send(hubble.NewDataMessage(guid, order, buffer[:count]))
 			order ++
 

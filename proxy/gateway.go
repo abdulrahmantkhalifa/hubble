@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"hubble"
+	"git.aydo.com/0-complexity/hubble"
 	"errors"
 	"log"
 	"fmt"
@@ -49,7 +49,7 @@ func (gw *gateway) register() error {
 	//2- Registration
 	log.Println(fmt.Sprintf("Registering gateway: %v", gw.handshake.Name))
 	gateways[gw.handshake.Name] = gw
-	
+
 	return nil
 }
 
@@ -102,7 +102,7 @@ func (gw *gateway) closeSession(terminator *hubble.ConnectionClosedMessage) {
 			delete(gw.terminals, terminator.GUID)
 			//remove ref from the other end terminals
 			terminal.terminate()
-		}	
+		}
 	}
 }
 
@@ -118,7 +118,7 @@ func (gw *gateway) forward(guid string, message hubble.Message) {
 func (term terminal) forward(message hubble.Message) {
 	defer func() {
 		if err := recover(); err != nil {
-			//propable channel is closed.
+			//channel is closed.
 			//Do nothing.
 		}
 	}()

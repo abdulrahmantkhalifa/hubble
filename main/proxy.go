@@ -1,7 +1,7 @@
-package main 
+package main
 
 import (
-	"hubble/proxy"
+	"git.aydo.com/0-complexity/hubble/proxy"
 	"net/http"
 	"log"
 	"fmt"

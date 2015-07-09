@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"hubble"
+	"git.aydo.com/0-complexity/hubble"
 	"log"
 	"crypto/tls"
 )
@@ -9,7 +9,7 @@ import (
 
 //Handshake
 func handshake(conn *hubble.Connection, agentname string, key string) error {
-	
+
 	message := hubble.NewHandshakeMessage(agentname, key)
 
 	err := conn.Send(message)
@@ -29,7 +29,7 @@ func handshake(conn *hubble.Connection, agentname string, key string) error {
 func dispatch(sessions sessionsStore, message hubble.SessionMessage) {
 	defer func () {
 		if err := recover(); err != nil {
-			//Can't send data to session channel?!. Please don't panic, chill out and 
+			//Can't send data to session channel?!. Please don't panic, chill out and
 			//relax, it's probably closed. Do nothing.
 		}
 	} ()
@@ -52,7 +52,7 @@ func Agent(name string, key string, url string, tunnels []*Tunnel,config *tls.Co
 	if err != nil {
 		return
 	}
-	
+
 	//2- registration
 	err = handshake(conn, name, key)
 	if err != nil {

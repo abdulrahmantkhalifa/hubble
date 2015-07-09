@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"hubble"
+	"git.aydo.com/0-complexity/hubble"
 	"log"
 	"fmt"
 	"net/http"
@@ -23,7 +23,7 @@ func initiatorMessage(gw *gateway, message hubble.Message) {
 	log.Println("New Session", initiator)
 	err := gw.openSession(initiator)
 	if err != nil {
-		//in case local session pipe starting failes, we send 
+		//in case local session pipe starting failes, we send
 		//error to agent. otherwise we wait for ack from
 		//the other end
 		gw.connection.SendAckOrError(initiator.GUID, err)
@@ -54,7 +54,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 	//1- Handshake
 	message, err := conn.Receive()
-	
+
 	if err != nil {
 		return
 	}
@@ -65,7 +65,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	}
 
 	handshake := message.(*hubble.HandshakeMessage)
-	
+
 	if handshake.Version != hubble.PROTOCOL_VERSION_0_1 {
 		conn.SendAckOrError("", invalidProtocolVersion)
 		return
@@ -75,7 +75,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 	err = gw.register()
 	conn.SendAckOrError("", err)
-	
+
 	if err != nil {
 		return
 	}

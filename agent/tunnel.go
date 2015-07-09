@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"hubble"
+	"git.aydo.com/0-complexity/hubble"
 	"net"
 	"fmt"
 	"log"
@@ -57,12 +57,12 @@ func (tunnel *Tunnel) serve(sessions sessionsStore, conn *hubble.Connection) {
 
 func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, socket net.Conn) {
 	guid := uuid.New()
-	
+
 	defer func() {
 		log.Printf("Session %v on tunnel %v terminated\n", guid, tunnel)
 		socket.Close()
 	}()
-	
+
 	channel := registerSession(sessions, guid)
 	defer unregisterSession(sessions, guid)
 
@@ -71,7 +71,7 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 
 	err := conn.Send(hubble.NewInitiatorMessage(guid,
 		tunnel.ip, tunnel.remote, tunnel.gateway))
-	
+
 	if err != nil {
 		log.Printf("Failed to start session %v to %v: %v\n", guid, tunnel, err)
 		return
@@ -99,7 +99,7 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	}
 
 	log.Printf("Session %v started...", guid)
-	
+
 	serveSession(guid, conn, channel, socket)
 }
 
