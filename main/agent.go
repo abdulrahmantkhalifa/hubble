@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"strconv"
 	"io/ioutil"
+	"os"
 )
 
 
@@ -89,9 +90,22 @@ func main() {
 		config.RootCAs.AppendCertsFromPEM(pem)
 	}
 
-	err := agent.Agent(name, key, url, tunnels, &config)
+	agt := agent.NewAgent(url, name, key, &config)
+	err := agt.Start(func (agt agent.Agent, err error) {
+		code := 0
+		if err != nil {
+			log.Println(err)
+			code = 1
+		}
+		os.Exit(code)
+	})
+
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	for _, tunnel := range tunnels {
+		agt.AddTunnel(tunnel)
 	}
 
 	//wait forever

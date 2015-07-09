@@ -14,8 +14,10 @@ type Tunnel struct {
 	ip net.IP
 	remote uint16
 	gateway string
+	listener net.Listener
 }
 
+type ctrlChan chan int
 
 func NewTunnel(local uint16, gateway string, ip net.IP, remote uint16) *Tunnel {
 	tunnel := new(Tunnel)
@@ -32,30 +34,53 @@ func (tunnel *Tunnel) String() string {
 }
 
 //Open the tunnel on local side and server over the given connection to the proxy.
-func (tunnel *Tunnel) serve(sessions sessionsStore, conn *hubble.Connection) {
+func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) error {
+	log.Println("Starting tunnel", tunnel)
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", tunnel.local))
+
+	if err != nil {
+		log.Printf("Failed to listing on port %v: %v\n", tunnel.local, err)
+		return err
+	}
+
+	tunnel.listener = listener
+	ctrl := make(ctrlChan)
+
 	go func() {
 		// open socket and wait for connections
-		listner, err := net.Listen("tcp", fmt.Sprintf(":%d", tunnel.local))
-		defer listner.Close()
-
-		if err != nil {
-			log.Printf("Failed to listing on port %v: %v\n", tunnel.local, err)
-			return
-		}
+		defer func() {
+			listener.Close()
+			//send kill signal to all sessions built on that tunnel.
+			for {
+				select {
+				case ctrl <- 1:
+				case <- time.After(5 * time.Second):
+					log.Println("All tunnel sessions are terminated")
+					return
+				}
+			}
+		} ()
 
 		for {
-			socket, err := listner.Accept()
+			socket, err := listener.Accept()
 			if err != nil {
-				log.Println(err)
-				socket.Close()
+				log.Println("Tunnel", tunnel, "closed", err)
+				return
 			}
 
-			go tunnel.handle(sessions, conn, socket)
+			go tunnel.handle(sessions, conn, socket, ctrl)
 		}
-	}()
+	} ()
+
+	return nil
 }
 
-func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, socket net.Conn) {
+func (tunnel *Tunnel) stop() {
+	log.Println("Terminating tunnel", tunnel)
+	tunnel.listener.Close()
+}
+
+func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, socket net.Conn, ctrl ctrlChan) {
 	guid := uuid.New()
 
 	defer func() {
@@ -93,6 +118,9 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 				//failed to start session!
 				return
 			}
+		case <- ctrl:
+			//currently only ctrl signal is to terminate
+			return
 		case <- time.After(30 * time.Second):
 			//timedout, return
 			return
@@ -100,6 +128,6 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 
 	log.Printf("Session %v started...", guid)
 
-	serveSession(guid, conn, channel, socket)
+	serveSession(guid, conn, channel, socket, ctrl)
 }
 

@@ -43,11 +43,11 @@ func startLocalSession(sessions sessionsStore, conn *hubble.Connection, initiato
 		channel := registerSession(sessions, initiator.GUID)
 		defer unregisterSession(sessions, initiator.GUID)
 
-		serveSession(initiator.GUID, conn, channel, socket)
+		serveSession(initiator.GUID, conn, channel, socket, nil)
 	} ()
 }
 
-func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, socket net.Conn) {
+func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, socket net.Conn, ctrl ctrlChan) {
 	log.Println("Starting routines for session", guid)
 
 	var wg sync.WaitGroup
@@ -103,34 +103,39 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 
 		var lastOrder int64 = 0
 		for {
-			message, ok := <- channel
-			//send on open socket.
-			if !ok || message.GetMessageType() == hubble.TERMINATOR_MESSAGE_TYPE {
-				//force socket termination
-				socket.Close()
-				return
-			}
-
-			if message.GetMessageType() == hubble.DATA_MESSAGE_TYPE {
-				data := message.(*hubble.DataMessage)
-				if lastOrder + 1 != data.Order {
-					log.Println("Data out of order")
+			select {
+			case message, ok := <- channel:
+				//send on open socket.
+				if !ok || message.GetMessageType() == hubble.TERMINATOR_MESSAGE_TYPE {
+					//force socket termination
 					socket.Close()
 					return
 				}
 
-				lastOrder = data.Order
-
-				written := 0
-				for written < len(data.Data) {
-					count, err := socket.Write(data.Data[written:])
-					if err != nil {
-						log.Println(err)
+				if message.GetMessageType() == hubble.DATA_MESSAGE_TYPE {
+					data := message.(*hubble.DataMessage)
+					if lastOrder + 1 != data.Order {
+						log.Println("Data out of order")
+						socket.Close()
 						return
 					}
 
-					written += count
+					lastOrder = data.Order
+
+					written := 0
+					for written < len(data.Data) {
+						count, err := socket.Write(data.Data[written:])
+						if err != nil {
+							log.Println(err)
+							return
+						}
+
+						written += count
+					}
 				}
+			case <- ctrl:
+				socket.Close()
+				return
 			}
 		}
 	}()
