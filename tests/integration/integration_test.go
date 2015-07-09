@@ -1,10 +1,10 @@
-package hubble 
+package hubble
 
 import (
 	"net"
 	"net/http"
-	"hubble/proxy"
-	"hubble/agent"
+	"git.aydo.com/0-complexity/hubble/proxy"
+	"git.aydo.com/0-complexity/hubble/agent"
 	"testing"
 	"sync"
 	"os"
@@ -68,7 +68,7 @@ func TestMain(m *testing.M) {
 
 		}
 		go http.Serve(listner, nil)
-		
+
 	}()
 
 	//wait until proxy is ready before starting agents.
@@ -105,8 +105,8 @@ func TestMain(m *testing.M) {
 	} ()
 
 	wg.Wait()
-	
-	
+
+
 
 	//Create files to serve.
 	for i := 0; i < NUM_FILES; i++ {
@@ -146,7 +146,7 @@ func download(fname string) (hash string, err error) {
 	}
 
 	defer response.Body.Close()
-	
+
 	if response.StatusCode != 200 {
 		err = errors.New("Invalid status code")
 		return
@@ -158,7 +158,7 @@ func download(fname string) (hash string, err error) {
 
 func TestDownload(t *testing.T) {
 	//now the status is the following
-	//1- We have a proxy running 
+	//1- We have a proxy running
 	//2- We have 2 agents running
 	//3- We have a file server running.
 	//4- We have files served by the file server
