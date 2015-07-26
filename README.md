@@ -37,6 +37,8 @@ go run agent.go -url=ws://localhost:8080 -name=agent1 2222:agent2:127.0.0.1:22
 The forwarding rule reads as "Listen on local port `2222` and forward connection to that port to over agent2 to machine 127.0.0.1:22 (in agent2 network)"
 You can add as many forwarding rules as you want
 
+If you want the application to dynamically choose an unused local port to listen on, you may specify `0` as the local port. The application will log the actual chosen port to the console.
+
 ### Running agent2
 ```sh
 cd $GOPATH/src/git.aydo.com/0-complexity/hubble/main
