@@ -14,7 +14,7 @@ To have a working setup you need to run the following:
 
 Steps:
 ```sh
-go get git.aydo.com/0-complexity/hubble
+go get github.com/Jumpscale/hubble
 ```
 
 ## Demo environemt
@@ -22,7 +22,7 @@ For testing you still can run the proxy and the 2 agents on the same machine as 
 
 ### Running proxy
 ```sh
-cd $GOPATH/src/git.aydo.com/0-complexity/hubble/main
+cd $GOPATH/src/github.com/Jumpscale/hubble/main
 go run proxy.go
 ```
 
@@ -30,7 +30,7 @@ By default proxy will start listing on port 8080. You can change that with the `
 
 ### Running agent1
 ```sh
-cd $GOPATH/src/git.aydo.com/0-complexity/hubble/main
+cd $GOPATH/src/github.com/Jumpscale/hubble/main
 go run agent.go -url=ws://localhost:8080 -name=agent1 2222:agent2:127.0.0.1:22
 ```
 
@@ -41,7 +41,7 @@ If you want the application to dynamically choose an unused local port to listen
 
 ### Running agent2
 ```sh
-cd $GOPATH/src/git.aydo.com/0-complexity/hubble/main
+cd $GOPATH/src/github.com/Jumpscale/hubble/main
 go run agent.go -url=ws://localhost:8080 -name=agent2
 ```
 
