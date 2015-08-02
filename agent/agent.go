@@ -17,6 +17,7 @@ type Agent interface {
 	Stop() error
 	AddTunnel(*Tunnel) error
 	RemoveTunnel(*Tunnel)
+	Tunnels() []*Tunnel
 }
 
 type agentImpl struct {
@@ -176,4 +177,13 @@ func (agent *agentImpl) RemoveTunnel(tunnel *Tunnel) {
 
 		tunnel.stop()
 	}
+}
+
+func (agent *agentImpl) Tunnels() []*Tunnel {
+	tunnels := make([]*Tunnel, 0, len(agent.tunnels))
+	for _, tunnel := range agent.tunnels {
+		tunnels = append(tunnels, tunnel)
+	}
+
+	return tunnels
 }
