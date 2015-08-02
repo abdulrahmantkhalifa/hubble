@@ -12,7 +12,7 @@ import (
 	"crypto/x509"
 	"strconv"
 	"io/ioutil"
-	"os"
+	"time"
 )
 
 
@@ -91,18 +91,19 @@ func main() {
 	}
 
 	agt := agent.NewAgent(url, name, key, &config)
-	err := agt.Start(func (agt agent.Agent, err error) {
-		code := 0
-		if err != nil {
-			log.Println(err)
-			code = 1
-		}
-		os.Exit(code)
-	})
 
-	if err != nil {
-		log.Fatal(err)
+	var onExit func (agt agent.Agent, err error)
+
+	onExit = func (agt agent.Agent, err error) {
+		if err != nil {
+			go func(){
+				time.Sleep(10 * time.Second)
+				agt.Start(onExit)
+			}()
+		}
 	}
+
+	agt.Start(onExit)
 
 	for _, tunnel := range tunnels {
 		agt.AddTunnel(tunnel)

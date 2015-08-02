@@ -95,6 +95,13 @@ func (agent *agentImpl) dispatch(message hubble.SessionMessage) {
 func (agent *agentImpl) Start(onExit OnExit) (err error) {
 	//1- intialize connection to proxy
 	conn, err := hubble.NewProxyConnection(agent.proxy, agent.tlsConfig)
+
+	defer func() {
+		if err != nil && onExit != nil {
+			onExit(agent, err)
+		}
+	} ()
+
 	if err != nil {
 		return
 	}
@@ -113,13 +120,15 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 			for _, tunnel := range agent.tunnels {
 				tunnel.stop()
 			}
+
 			if onExit != nil {
 				onExit(agent, err)
 			}
 		} ()
 
 		for {
-			message, err := conn.Receive()
+			var message hubble.Message
+			message, err = conn.Receive()
 			if err != nil {
 				//we should check error types to take a decistion. for now just exit
 				log.Println("Receive loop failed", err)
@@ -134,6 +143,10 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 			}
 		}
 	}()
+
+	for _, tunnel := range agent.tunnels {
+		tunnel.start(agent.sessions, agent.conn)
+	}
 
 	return nil
 }
