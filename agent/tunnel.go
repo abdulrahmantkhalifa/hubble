@@ -29,6 +29,22 @@ func NewTunnel(local uint16, gateway string, ip net.IP, remote uint16) *Tunnel {
 	return tunnel
 }
 
+func (tunnel *Tunnel) Local() uint16 {
+	return tunnel.local
+}
+
+func (tunnel *Tunnel) IP() net.IP {
+	return tunnel.ip
+}
+
+func (tunnel *Tunnel) Gateway() string {
+	return tunnel.gateway
+}
+
+func (tunnel *Tunnel) Remote() uint16 {
+	return tunnel.remote
+}
+
 func (tunnel *Tunnel) String() string {
 	return fmt.Sprintf("%v:%v:%v:%v", tunnel.local, tunnel.gateway, tunnel.ip, tunnel.remote)
 }
