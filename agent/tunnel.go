@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 	"code.google.com/p/go-uuid/uuid"
+	"strconv"
 )
 
 type Tunnel struct {
@@ -57,6 +58,16 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 	if err != nil {
 		log.Printf("Failed to listing on port %v: %v\n", tunnel.local, err)
 		return err
+	}
+
+	if tunnel.local == 0 {
+		addr := listener.Addr().String()
+		if _, port, err := net.SplitHostPort(addr); err == nil {
+			if i, err := strconv.ParseUint(port, 10, 16); err == nil {
+				tunnel.local = uint16(i)
+				log.Println("Listening on dynamic port", tunnel.local)
+			}
+		}
 	}
 
 	tunnel.listener = listener
