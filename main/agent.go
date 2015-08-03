@@ -2,7 +2,7 @@
 package main
 
 import (
-	"git.aydo.com/0-complexity/hubble/agent"
+	"github.com/Jumpscale/hubble/agent"
 	"log"
 	"fmt"
 	"net"

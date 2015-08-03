@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"git.aydo.com/0-complexity/hubble"
+	"github.com/Jumpscale/hubble"
 	"net"
 	"fmt"
 	"log"

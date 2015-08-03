@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git.aydo.com/0-complexity/hubble/proxy"
+	"github.com/Jumpscale/hubble/proxy"
 	"net/http"
 	"log"
 	"fmt"

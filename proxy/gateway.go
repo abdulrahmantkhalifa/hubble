@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"git.aydo.com/0-complexity/hubble"
+	"github.com/Jumpscale/hubble"
 	"errors"
 	"log"
 	"fmt"

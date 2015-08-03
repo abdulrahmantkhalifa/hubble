@@ -3,8 +3,8 @@ package hubble
 import (
 	"net"
 	"net/http"
-	"git.aydo.com/0-complexity/hubble/proxy"
-	"git.aydo.com/0-complexity/hubble/agent"
+	"github.com/Jumpscale/hubble/proxy"
+	"github.com/Jumpscale/hubble/agent"
 	"testing"
 	"sync"
 	"os"
