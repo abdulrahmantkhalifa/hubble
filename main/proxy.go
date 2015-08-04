@@ -16,11 +16,13 @@ func main() {
 	var help bool
 	var authLua string
 	var authAcceptAll bool
+	var authDeclineAll bool
 
 	flag.BoolVar(&help, "h", false, "Print this help screen")
 	flag.StringVar(&listenAddr, "listen", ":8080", "Listining address")
 	flag.StringVar(&authLua, "authlua", "", "Lua authorization module")
 	flag.BoolVar(&authAcceptAll, "authgrant", false, "Grant all authorization requests")
+	flag.BoolVar(&authDeclineAll, "authdecline", false, "Decline all authorization requests (for debugging purposes)")
 	flag.Parse()
 
 	printHelp := func() {
@@ -33,7 +35,10 @@ func main() {
 		return
 	}
 
-	if authLua != "" {
+	if authDeclineAll {
+		auth.Install(auth.NewDeclineAllModule())
+
+	} else if authLua != "" {
 		m, err := auth.NewLuaModule(authLua)
 		if err != nil {
 			log.Println("Cannot install Lua authorization module:", err)
