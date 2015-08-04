@@ -5,13 +5,14 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"github.com/Jumpscale/hubble/agent"
 	"io/ioutil"
 	"log"
 	"net"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/Jumpscale/hubble/agent"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 	flag.Parse()
 
 	printHelp := func() {
-		fmt.Println("agent [options] [[local port:gateway:remot ip:remot port]...]")
+		fmt.Println("agent [options] [[local port:[key@]gateway:remot ip:remot port]...]")
 		flag.PrintDefaults()
 	}
 
@@ -42,14 +43,14 @@ func main() {
 	tunnels_def := flag.Args()
 	tunnels := make([]*agent.Tunnel, 0)
 
-	//tunnel is defined as lport:gw:ip:port
-	re := regexp.MustCompile("(\\d+):([^:]+):([^:]+):(\\d+)")
+	//tunnel is defined as lport:[key@]gw:ip:port
+	re := regexp.MustCompile("(\\d+):(.*@)?([^:]+):([^:]+):(\\d+)")
 
 	for _, tunnel_def := range tunnels_def {
 		match := re.FindStringSubmatch(tunnel_def)
-		ip := net.ParseIP(match[3])
+		ip := net.ParseIP(match[4])
 		if ip == nil {
-			log.Fatalf("Invalid ip address %v", match[3])
+			log.Fatalf("Invalid ip address %v", match[4])
 		}
 
 		local, err := strconv.ParseUint(match[1], 10, 16)
@@ -57,11 +58,19 @@ func main() {
 			log.Fatalf("Invalid port %v", match[1])
 		}
 
-		remote, err := strconv.ParseUint(match[4], 10, 16)
+		remote, err := strconv.ParseUint(match[5], 10, 16)
 		if err != nil {
-			log.Fatalf("Invalid port %v", match[4])
+			log.Fatalf("Invalid port %v", match[5])
 		}
-		tunnel := agent.NewTunnel(uint16(local), match[2], ip, uint16(remote))
+
+		key := match[2]
+		if key != "" {
+			key = key[:len(key)-1]
+		}
+
+		gw := match[3]
+
+		tunnel := agent.NewTunnel(uint16(local), gw, key, ip, uint16(remote))
 		tunnels = append(tunnels, tunnel)
 	}
 

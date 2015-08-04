@@ -1,13 +1,14 @@
 package agent
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"fmt"
-	"github.com/Jumpscale/hubble"
 	"log"
 	"net"
 	"strconv"
 	"time"
+
+	"code.google.com/p/go-uuid/uuid"
+	"github.com/Jumpscale/hubble"
 )
 
 type Tunnel struct {
@@ -15,16 +16,18 @@ type Tunnel struct {
 	ip       net.IP
 	remote   uint16
 	gateway  string
+	key      string
 	listener net.Listener
 }
 
 type ctrlChan chan int
 
-func NewTunnel(local uint16, gateway string, ip net.IP, remote uint16) *Tunnel {
+func NewTunnel(local uint16, gateway, key string, ip net.IP, remote uint16) *Tunnel {
 	tunnel := new(Tunnel)
 	tunnel.local = local
 	tunnel.ip = ip
 	tunnel.gateway = gateway
+	tunnel.key = key
 	tunnel.remote = remote
 
 	return tunnel
@@ -122,7 +125,7 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	log.Printf("Starting session %v on tunnel %v", guid, tunnel)
 
 	err := conn.Send(hubble.NewInitiatorMessage(guid,
-		tunnel.ip, tunnel.remote, tunnel.gateway))
+		tunnel.ip, tunnel.remote, tunnel.gateway, tunnel.key))
 
 	if err != nil {
 		log.Printf("Failed to start session %v to %v: %v\n", guid, tunnel, err)
