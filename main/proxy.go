@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/Jumpscale/hubble/auth"
 	"github.com/Jumpscale/hubble/proxy"
@@ -33,8 +34,14 @@ func main() {
 	}
 
 	if authLua != "" {
-		// TODO: Initialize Lua authorization module.
-		panic("Not implemented")
+		m, err := auth.NewLuaModule(authLua)
+		if err != nil {
+			log.Println("Cannot install Lua authorization module:", err)
+			os.Exit(1)
+		}
+
+		auth.Install(m)
+
 	} else {
 		if !authAcceptAll {
 			log.Println("Warning, no authorization module specified, will",
