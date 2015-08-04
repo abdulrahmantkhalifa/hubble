@@ -20,7 +20,7 @@ func main() {
 	flag.BoolVar(&help, "h", false, "Print this help screen")
 	flag.StringVar(&listenAddr, "listen", ":8080", "Listining address")
 	flag.StringVar(&authLua, "authlua", "", "Lua authorization module")
-	flag.BoolVar(&authAcceptAll, "authall", false, "Grant all authorization requests")
+	flag.BoolVar(&authAcceptAll, "authgrant", false, "Grant all authorization requests")
 	flag.Parse()
 
 	printHelp := func() {
