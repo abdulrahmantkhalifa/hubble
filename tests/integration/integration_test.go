@@ -1,24 +1,23 @@
 package hubble
 
 import (
+	"crypto/md5"
+	"errors"
+	"fmt"
+	"github.com/Jumpscale/hubble/agent"
+	"github.com/Jumpscale/hubble/proxy"
+	"io"
 	"net"
 	"net/http"
-	"github.com/Jumpscale/hubble/proxy"
-	"github.com/Jumpscale/hubble/agent"
-	"testing"
-	"sync"
 	"os"
 	"os/exec"
-	"io"
-	"crypto/md5"
-	"fmt"
-	"errors"
+	"sync"
+	"testing"
 )
 
 const NUM_FILES int = 10
 const BLOCK_SIZE = 512 //KB
-const FILE_SIZE = 1 //M
-
+const FILE_SIZE = 1    //M
 
 func md5sum_r(reader io.Reader) (string, error) {
 	md5 := md5.New()
@@ -58,7 +57,7 @@ func TestMain(m *testing.M) {
 
 	wg.Add(1)
 	//starting proxy
-	go func () {
+	go func() {
 		defer wg.Done()
 
 		http.HandleFunc("/", proxy.ProxyHandler)
@@ -89,7 +88,7 @@ func TestMain(m *testing.M) {
 
 	//now we need to start a file server that serves on port 5555
 	tempdir := fmt.Sprintf("%s/%s", os.TempDir(), "hubble_t")
-	err := os.MkdirAll(tempdir, os.ModeDir | os.ModePerm)
+	err := os.MkdirAll(tempdir, os.ModeDir|os.ModePerm)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -99,7 +98,7 @@ func TestMain(m *testing.M) {
 
 	wg.Add(1)
 
-	go func () {
+	go func() {
 		defer wg.Done()
 		listner, err := net.Listen("tcp", ":5555")
 		if err != nil {
@@ -107,21 +106,19 @@ func TestMain(m *testing.M) {
 			os.Exit(1)
 		}
 		go http.Serve(listner, http.FileServer(http.Dir(tempdir)))
-	} ()
+	}()
 
 	wg.Wait()
-
-
 
 	//Create files to serve.
 	for i := 0; i < NUM_FILES; i++ {
 		fname := fmt.Sprintf("file-%d", i)
 		fpath := fmt.Sprintf("%s/%s", tempdir, fname)
 		cmd := exec.Command("dd",
-							"if=/dev/urandom",
-							fmt.Sprintf("of=%s", fpath),
-							fmt.Sprintf("bs=%dk", BLOCK_SIZE),
-							fmt.Sprintf("count=%d", FILE_SIZE * 1024 / BLOCK_SIZE))
+			"if=/dev/urandom",
+			fmt.Sprintf("of=%s", fpath),
+			fmt.Sprintf("bs=%dk", BLOCK_SIZE),
+			fmt.Sprintf("count=%d", FILE_SIZE*1024/BLOCK_SIZE))
 
 		err := cmd.Run()
 		if err != nil {
@@ -176,7 +173,7 @@ func TestDownload(t *testing.T) {
 	downloadWg.Add(NUM_FILES)
 	for i := 0; i < NUM_FILES; i++ {
 		fname := fmt.Sprintf("file-%d", i)
-		go func () {
+		go func() {
 			defer downloadWg.Done()
 
 			downloaded_hash, err := download(fname)
@@ -187,9 +184,9 @@ func TestDownload(t *testing.T) {
 			t.Log(fname, hashes[fname], downloaded_hash)
 			if hashes[fname] != downloaded_hash {
 				t.Errorf("File: %s with has %s has wrong downloaded hash %s",
-						 fname, hashes[fname], downloaded_hash)
+					fname, hashes[fname], downloaded_hash)
 			}
-		} ()
+		}()
 	}
 	t.Log("Waiting for downloads to finish")
 	downloadWg.Wait()
@@ -197,7 +194,7 @@ func TestDownload(t *testing.T) {
 
 func BenchmarkDownload(b *testing.B) {
 	fname := "file-0"
-	for i := 0; i < b.N; i ++ {
+	for i := 0; i < b.N; i++ {
 		download(fname)
 	}
 }

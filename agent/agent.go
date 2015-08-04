@@ -1,13 +1,13 @@
 package agent
 
 import (
-	"github.com/Jumpscale/hubble"
-	"log"
 	"crypto/tls"
 	"errors"
+	"github.com/Jumpscale/hubble"
+	"log"
 )
 
-type OnExit func (Agent, error)
+type OnExit func(Agent, error)
 
 type Agent interface {
 	Proxy() string
@@ -21,23 +21,23 @@ type Agent interface {
 }
 
 type agentImpl struct {
-	name string
-	key string
-	proxy string
+	name      string
+	key       string
+	proxy     string
 	tlsConfig *tls.Config
-	tunnels map[string]*Tunnel
-	conn *hubble.Connection
-	sessions sessionsStore
+	tunnels   map[string]*Tunnel
+	conn      *hubble.Connection
+	sessions  sessionsStore
 }
 
 func NewAgent(proxy string, name string, key string, tlsConfig *tls.Config) Agent {
 	return &agentImpl{
-		proxy: proxy,
-		name: name,
-		key: key,
-		tlsConfig:tlsConfig,
-		tunnels: make(map[string]*Tunnel),
-		sessions: make(sessionsStore),
+		proxy:     proxy,
+		name:      name,
+		key:       key,
+		tlsConfig: tlsConfig,
+		tunnels:   make(map[string]*Tunnel),
+		sessions:  make(sessionsStore),
 	}
 }
 
@@ -73,12 +73,12 @@ func (agent *agentImpl) handshake() error {
 }
 
 func (agent *agentImpl) dispatch(message hubble.SessionMessage) {
-	defer func () {
+	defer func() {
 		if err := recover(); err != nil {
 			//Can't send data to session channel?!. Please don't panic, chill out and
 			//relax, it's probably closed. Do nothing.
 		}
-	} ()
+	}()
 	session, ok := agent.sessions[message.GetGUID()]
 
 	if !ok {
@@ -100,7 +100,7 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 		if err != nil && onExit != nil {
 			onExit(agent, err)
 		}
-	} ()
+	}()
 
 	if err != nil {
 		return
@@ -112,7 +112,7 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 		return
 	}
 
-	go func () {
+	go func() {
 		//receive all messages.
 		log.Println("Start receiving loop")
 		err = nil
@@ -124,7 +124,7 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 			if onExit != nil {
 				onExit(agent, err)
 			}
-		} ()
+		}()
 
 		for {
 			var message hubble.Message
@@ -135,11 +135,11 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 				return
 			}
 			switch message.GetMessageType() {
-				case hubble.INITIATOR_MESSAGE_TYPE:
-					initiator := message.(*hubble.InitiatorMessage)
-					startLocalSession(agent.sessions, conn, initiator)
-				default:
-					agent.dispatch(message.(hubble.SessionMessage))
+			case hubble.INITIATOR_MESSAGE_TYPE:
+				initiator := message.(*hubble.InitiatorMessage)
+				startLocalSession(agent.sessions, conn, initiator)
+			default:
+				agent.dispatch(message.(hubble.SessionMessage))
 			}
 		}
 	}()
@@ -174,7 +174,6 @@ func (agent *agentImpl) AddTunnel(tunnel *Tunnel) error {
 		//not re-adding tunnel
 		return nil
 	}
-
 
 	err := tunnel.start(agent.sessions, agent.conn)
 	if err == nil {

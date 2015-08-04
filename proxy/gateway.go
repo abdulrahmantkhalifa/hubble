@@ -1,10 +1,10 @@
 package proxy
 
 import (
-	"github.com/Jumpscale/hubble"
 	"errors"
-	"log"
 	"fmt"
+	"github.com/Jumpscale/hubble"
+	"log"
 )
 
 const GatewayQueueSize = 512
@@ -14,22 +14,21 @@ var unauthorized = errors.New("Unauthorized")
 var gatewayNotRegistered = errors.New("Gateway not registered")
 
 type terminal struct {
-	guid string
+	guid    string
 	gateway *gateway
 }
 
 type gateway struct {
-	handshake *hubble.HandshakeMessage
+	handshake  *hubble.HandshakeMessage
 	connection *hubble.Connection
-	terminals map[string]*terminal
-	channel chan hubble.Message
+	terminals  map[string]*terminal
+	channel    chan hubble.Message
 }
-
 
 var gateways = make(map[string]*gateway)
 
 func newGateway(connection *hubble.Connection,
-				handshake *hubble.HandshakeMessage) *gateway {
+	handshake *hubble.HandshakeMessage) *gateway {
 	gw := new(gateway)
 	gw.connection = connection
 	gw.handshake = handshake
