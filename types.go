@@ -1,9 +1,9 @@
 package hubble
 
 import (
-	"net"
-	"fmt"
 	"errors"
+	"fmt"
+	"net"
 )
 
 type MessageType uint8
@@ -43,8 +43,8 @@ func (msg *GuidMessage) GetGUID() string {
 //Handshake message
 type HandshakeMessage struct {
 	Version string
-	Name string
-	Key string
+	Name    string
+	Key     string
 }
 
 func (msg *HandshakeMessage) GetMessageType() MessageType {
@@ -54,8 +54,8 @@ func (msg *HandshakeMessage) GetMessageType() MessageType {
 //Initiator message
 type InitiatorMessage struct {
 	GuidMessage
-	Ip net.IP
-	Port uint16
+	Ip       net.IP
+	Port     uint16
 	Gatename string
 }
 
@@ -67,7 +67,7 @@ func (msg *InitiatorMessage) GetMessageType() MessageType {
 type DataMessage struct {
 	GuidMessage
 	Order int64
-	Data []byte
+	Data  []byte
 }
 
 func (msg *DataMessage) GetMessageType() MessageType {
@@ -92,14 +92,13 @@ func (msg *ConnectionClosedMessage) GetMessageType() MessageType {
 //Ack message
 type AckMessage struct {
 	GuidMessage
-	Ok bool
+	Ok      bool
 	Message string
 }
 
 func (msg *AckMessage) GetMessageType() MessageType {
 	return ACK_MESSAGE_TYPE
 }
-
 
 func (msg *InitiatorMessage) String() string {
 	return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.Ip, msg.Port, msg.GUID)
@@ -110,27 +109,27 @@ func (msg *TerminatorMessage) String() string {
 }
 
 func NewHandshakeMessage(name string, key string) *HandshakeMessage {
-	return &HandshakeMessage {
+	return &HandshakeMessage{
 		Version: PROTOCOL_VERSION_0_1,
-		Name: name,
-		Key: key,
+		Name:    name,
+		Key:     key,
 	}
 }
 
 func NewInitiatorMessage(guid string, ip net.IP, port uint16, gatename string) *InitiatorMessage {
-	return &InitiatorMessage {
+	return &InitiatorMessage{
 		GuidMessage: GuidMessage{guid},
-		Ip: ip,
-		Port: port,
-		Gatename: gatename,
+		Ip:          ip,
+		Port:        port,
+		Gatename:    gatename,
 	}
 }
 
 func NewDataMessage(guid string, order int64, data []byte) *DataMessage {
 	return &DataMessage{
 		GuidMessage: GuidMessage{guid},
-		Order: order,
-		Data: data,
+		Order:       order,
+		Data:        data,
 	}
 }
 
@@ -141,44 +140,43 @@ func NewTerminatorMessage(guid string) *TerminatorMessage {
 }
 
 func NewConnectionClosedMessage(guid string) *ConnectionClosedMessage {
-	return &ConnectionClosedMessage {
+	return &ConnectionClosedMessage{
 		GuidMessage: GuidMessage{guid},
 	}
 }
 
 func NewAckMessage(guid string, ok bool, message string) *AckMessage {
-	return &AckMessage {
+	return &AckMessage{
 		GuidMessage: GuidMessage{guid},
-		Ok: ok,
-		Message: message,
+		Ok:          ok,
+		Message:     message,
 	}
 }
 
-var messageTypes = map[MessageType]func() Message {
+var messageTypes = map[MessageType]func() Message{
 	HANDSHAKE_MESSAGE_TYPE: func() Message {
-		return &HandshakeMessage {}
+		return &HandshakeMessage{}
 	},
 	INITIATOR_MESSAGE_TYPE: func() Message {
-		return &InitiatorMessage {}
+		return &InitiatorMessage{}
 	},
 	DATA_MESSAGE_TYPE: func() Message {
-		return &DataMessage {}
+		return &DataMessage{}
 	},
 	TERMINATOR_MESSAGE_TYPE: func() Message {
-		return &TerminatorMessage {}
+		return &TerminatorMessage{}
 	},
 	CONNECTION_CLOSED_MESSAGE_TYPE: func() Message {
 		return &ConnectionClosedMessage{}
 	},
 	ACK_MESSAGE_TYPE: func() Message {
-		return &AckMessage {}
+		return &AckMessage{}
 	},
 }
 
-
 func NewMessage(mtype MessageType) (Message, error) {
 	initiator, ok := messageTypes[mtype]
-	
+
 	if !ok {
 		return nil, unknownMessageType
 	}

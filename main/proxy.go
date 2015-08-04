@@ -1,13 +1,12 @@
 package main
 
 import (
-	"github.com/Jumpscale/hubble/proxy"
-	"net/http"
-	"log"
-	"fmt"
 	"flag"
+	"fmt"
+	"github.com/Jumpscale/hubble/proxy"
+	"log"
+	"net/http"
 )
-
 
 func main() {
 	var listenAddr string

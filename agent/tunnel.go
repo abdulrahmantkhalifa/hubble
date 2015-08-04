@@ -1,20 +1,20 @@
 package agent
 
 import (
-	"github.com/Jumpscale/hubble"
-	"net"
-	"fmt"
-	"log"
-	"time"
 	"code.google.com/p/go-uuid/uuid"
+	"fmt"
+	"github.com/Jumpscale/hubble"
+	"log"
+	"net"
 	"strconv"
+	"time"
 )
 
 type Tunnel struct {
-	local uint16
-	ip net.IP
-	remote uint16
-	gateway string
+	local    uint16
+	ip       net.IP
+	remote   uint16
+	gateway  string
 	listener net.Listener
 }
 
@@ -81,12 +81,12 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 			for {
 				select {
 				case ctrl <- 1:
-				case <- time.After(5 * time.Second):
+				case <-time.After(5 * time.Second):
 					log.Println("All tunnel sessions are terminated")
 					return
 				}
 			}
-		} ()
+		}()
 
 		for {
 			socket, err := listener.Accept()
@@ -97,7 +97,7 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 
 			go tunnel.handle(sessions, conn, socket, ctrl)
 		}
-	} ()
+	}()
 
 	return nil
 }
@@ -134,27 +134,26 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	//2- recieve ack
 	log.Println("Waiting for ack from:", tunnel.gateway)
 	select {
-		case message, ok := <- channel:
-			if !ok || message.GetMessageType() != hubble.ACK_MESSAGE_TYPE {
-				log.Println("Expecting ack message, got: ", message.GetMessageType())
-				return
-			}
+	case message, ok := <-channel:
+		if !ok || message.GetMessageType() != hubble.ACK_MESSAGE_TYPE {
+			log.Println("Expecting ack message, got: ", message.GetMessageType())
+			return
+		}
 
-			ack := message.(*hubble.AckMessage)
-			if !ack.Ok {
-				//failed to start session!
-				return
-			}
-		case <- ctrl:
-			//currently only ctrl signal is to terminate
+		ack := message.(*hubble.AckMessage)
+		if !ack.Ok {
+			//failed to start session!
 			return
-		case <- time.After(30 * time.Second):
-			//timedout, return
-			return
+		}
+	case <-ctrl:
+		//currently only ctrl signal is to terminate
+		return
+	case <-time.After(30 * time.Second):
+		//timedout, return
+		return
 	}
 
 	log.Printf("Session %v started...", guid)
 
 	serveSession(guid, conn, channel, socket, ctrl)
 }
-

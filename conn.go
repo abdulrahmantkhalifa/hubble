@@ -1,22 +1,21 @@
 package hubble
 
 import (
-	"fmt"
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"sync"
-	"crypto/tls"
 )
 
 type Connection struct {
-	ws *websocket.Conn
+	ws    *websocket.Conn
 	rlock sync.Mutex
 	wlock sync.Mutex
 }
 
 var unexpectedMessageType = errors.New("Unexpected message type")
 var unexpectedMessageFormat = errors.New("Only binary messages are supported")
-
 
 func NewProxyConnection(proxyUrl string, config *tls.Config) (*Connection, error) {
 	// open connection to proxy.
@@ -25,25 +24,24 @@ func NewProxyConnection(proxyUrl string, config *tls.Config) (*Connection, error
 	}
 
 	ws, _, err := dialer.Dial(proxyUrl, nil)
-	
+
 	if err != nil {
 		return nil, err
 	}
 
 	var connection = new(Connection)
 	connection.ws = ws
-	
+
 	return connection, nil
 }
 
 func NewConnection(ws *websocket.Conn) *Connection {
-	var connection = Connection {
+	var connection = Connection{
 		ws: ws,
 	}
 
 	return &connection
 }
-
 
 func (conn *Connection) Send(message Message) error {
 	conn.wlock.Lock()

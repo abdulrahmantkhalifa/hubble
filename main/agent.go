@@ -1,21 +1,18 @@
-
 package main
 
 import (
-	"github.com/Jumpscale/hubble/agent"
-	"log"
-	"fmt"
-	"net"
-	"flag"
-	"regexp"
 	"crypto/tls"
 	"crypto/x509"
-	"strconv"
+	"flag"
+	"fmt"
+	"github.com/Jumpscale/hubble/agent"
 	"io/ioutil"
+	"log"
+	"net"
+	"regexp"
+	"strconv"
 	"time"
 )
-
-
 
 func main() {
 	var url string
@@ -92,11 +89,11 @@ func main() {
 
 	agt := agent.NewAgent(url, name, key, &config)
 
-	var onExit func (agt agent.Agent, err error)
+	var onExit func(agt agent.Agent, err error)
 
-	onExit = func (agt agent.Agent, err error) {
+	onExit = func(agt agent.Agent, err error) {
 		if err != nil {
-			go func(){
+			go func() {
 				time.Sleep(10 * time.Second)
 				agt.Start(onExit)
 			}()

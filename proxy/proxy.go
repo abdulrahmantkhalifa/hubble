@@ -1,22 +1,21 @@
 package proxy
 
 import (
-	"github.com/Jumpscale/hubble"
-	"log"
-	"fmt"
-	"net/http"
 	"errors"
+	"fmt"
+	"github.com/Jumpscale/hubble"
 	"github.com/gorilla/websocket"
+	"log"
+	"net/http"
 )
 
 var invalidProtocolVersion = errors.New("Invalid protocol version")
 
-var upgrader = websocket.Upgrader {
-    ReadBufferSize:  1024,
-    WriteBufferSize: 1024,
-    CheckOrigin: func(request *http.Request) bool { return true },
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin:     func(request *http.Request) bool { return true },
 }
-
 
 func initiatorMessage(gw *gateway, message hubble.Message) {
 	initiator := message.(*hubble.InitiatorMessage)
@@ -41,11 +40,11 @@ func forward(gw *gateway, message hubble.Message) {
 	gw.forward(msg.GetGUID(), message)
 }
 
-var messageHandlers = map[hubble.MessageType] func (*gateway, hubble.Message) {
-	hubble.INITIATOR_MESSAGE_TYPE: initiatorMessage,
+var messageHandlers = map[hubble.MessageType]func(*gateway, hubble.Message){
+	hubble.INITIATOR_MESSAGE_TYPE:         initiatorMessage,
 	hubble.CONNECTION_CLOSED_MESSAGE_TYPE: connectionClosedMessage,
-	hubble.DATA_MESSAGE_TYPE: forward,
-	hubble.ACK_MESSAGE_TYPE: forward,
+	hubble.DATA_MESSAGE_TYPE:              forward,
+	hubble.ACK_MESSAGE_TYPE:               forward,
 }
 
 func handler(ws *websocket.Conn, request *http.Request) {
@@ -84,7 +83,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 	go func() {
 		for {
-			msgCap := <- gw.channel
+			msgCap := <-gw.channel
 			if msgCap == nil {
 				//channel has been closed
 				return
@@ -113,13 +112,14 @@ func handler(ws *websocket.Conn, request *http.Request) {
 		msgHandler(gw, message)
 	}
 }
+
 //The http handler for the websockets
 func ProxyHandler(writer http.ResponseWriter, request *http.Request) {
 	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
-        log.Println(err)
-        return
-    }
+		log.Println(err)
+		return
+	}
 
 	go handler(conn, request)
 }

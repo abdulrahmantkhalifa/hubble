@@ -1,8 +1,8 @@
 package hubble
 
 import (
-	"io"
 	"github.com/ugorji/go/codec"
+	"io"
 )
 
 var msgHandle = new(codec.MsgpackHandle)
@@ -26,13 +26,13 @@ func loads(reader io.Reader) (Message, error) {
 	}
 
 	msg, err := NewMessage(MessageType(mtype[0]))
-	
+
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := codec.NewDecoder(reader, msgHandle)
-	
+
 	err = decoder.Decode(msg)
 	if err != nil {
 		return nil, err

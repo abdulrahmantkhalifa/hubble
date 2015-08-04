@@ -1,12 +1,12 @@
 package agent
 
 import (
-	"github.com/Jumpscale/hubble"
-	"net"
 	"fmt"
-	"sync"
+	"github.com/Jumpscale/hubble"
 	"io"
 	"log"
+	"net"
+	"sync"
 )
 
 type sessionChannel chan hubble.Message
@@ -26,7 +26,6 @@ func unregisterSession(sessions sessionsStore, guid string) {
 	}
 }
 
-
 func startLocalSession(sessions sessionsStore, conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
 	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
 	go func() {
@@ -44,7 +43,7 @@ func startLocalSession(sessions sessionsStore, conn *hubble.Connection, initiato
 		defer unregisterSession(sessions, initiator.GUID)
 
 		serveSession(initiator.GUID, conn, channel, socket, nil)
-	} ()
+	}()
 }
 
 func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, socket net.Conn, ctrl ctrlChan) {
@@ -61,13 +60,13 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 			//send teminator to local channel (in case it still waiting)
 			defer func() {
 				recover()
-			} ()
+			}()
 
 			conn.Send(hubble.NewConnectionClosedMessage(guid))
 
 			//force closing the local receiver
 			channel <- hubble.NewTerminatorMessage(guid)
-		} ()
+		}()
 
 		buffer := make([]byte, 1024)
 		var order int64 = 1
@@ -80,7 +79,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 			}
 
 			err := conn.Send(hubble.NewDataMessage(guid, order, buffer[:count]))
-			order ++
+			order++
 
 			if err != nil {
 				//failed to forward data to proxy
@@ -104,7 +103,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 		var lastOrder int64 = 0
 		for {
 			select {
-			case message, ok := <- channel:
+			case message, ok := <-channel:
 				//send on open socket.
 				if !ok || message.GetMessageType() == hubble.TERMINATOR_MESSAGE_TYPE {
 					//force socket termination
@@ -114,7 +113,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 
 				if message.GetMessageType() == hubble.DATA_MESSAGE_TYPE {
 					data := message.(*hubble.DataMessage)
-					if lastOrder + 1 != data.Order {
+					if lastOrder+1 != data.Order {
 						log.Println("Data out of order")
 						socket.Close()
 						return
@@ -133,7 +132,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 						written += count
 					}
 				}
-			case <- ctrl:
+			case <-ctrl:
 				socket.Close()
 				return
 			}
