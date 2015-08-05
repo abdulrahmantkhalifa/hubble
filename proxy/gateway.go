@@ -3,8 +3,10 @@ package proxy
 import (
 	"errors"
 	"fmt"
-	"github.com/Jumpscale/hubble"
 	"log"
+
+	"github.com/Jumpscale/hubble"
+	"github.com/Jumpscale/hubble/auth"
 )
 
 const GatewayQueueSize = 512
@@ -64,6 +66,21 @@ func (gw *gateway) unregister() {
 }
 
 func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
+	ok, err := auth.Connect(auth.ConnectionRequest{
+		IP:       intiator.Ip,
+		Port:     intiator.Port,
+		Gatename: intiator.Gatename,
+		Key:      intiator.Key,
+	})
+	if err != nil {
+		log.Println("auth error:", err)
+		return errors.New("Authorization error.")
+	}
+	if !ok {
+		log.Println("Session authorization request declined")
+		return errors.New("Unauthorized")
+	}
+
 	endGw, ok := gateways[intiator.Gatename]
 	if !ok {
 		return gatewayNotRegistered

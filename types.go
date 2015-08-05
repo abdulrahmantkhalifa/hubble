@@ -57,6 +57,7 @@ type InitiatorMessage struct {
 	Ip       net.IP
 	Port     uint16
 	Gatename string
+	Key      string
 }
 
 func (msg *InitiatorMessage) GetMessageType() MessageType {
@@ -101,7 +102,11 @@ func (msg *AckMessage) GetMessageType() MessageType {
 }
 
 func (msg *InitiatorMessage) String() string {
-	return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.Ip, msg.Port, msg.GUID)
+	if msg.Key == "" {
+		return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.Ip, msg.Port, msg.GUID)
+	} else {
+		return fmt.Sprintf("%v@%v->%v:%v id(%v)", msg.Key, msg.Gatename, msg.Ip, msg.Port, msg.GUID)
+	}
 }
 
 func (msg *TerminatorMessage) String() string {
@@ -116,12 +121,13 @@ func NewHandshakeMessage(name string, key string) *HandshakeMessage {
 	}
 }
 
-func NewInitiatorMessage(guid string, ip net.IP, port uint16, gatename string) *InitiatorMessage {
+func NewInitiatorMessage(guid string, ip net.IP, port uint16, gatename, key string) *InitiatorMessage {
 	return &InitiatorMessage{
 		GuidMessage: GuidMessage{guid},
 		Ip:          ip,
 		Port:        port,
 		Gatename:    gatename,
+		Key:         key,
 	}
 }
 
