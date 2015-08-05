@@ -4,8 +4,6 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"github.com/Jumpscale/hubble/agent"
-	"github.com/Jumpscale/hubble/proxy"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +11,10 @@ import (
 	"os/exec"
 	"sync"
 	"testing"
+
+	"github.com/Jumpscale/hubble/agent"
+	"github.com/Jumpscale/hubble/auth"
+	"github.com/Jumpscale/hubble/proxy"
 )
 
 const NUM_FILES int = 10
@@ -55,6 +57,8 @@ var hashes = make(map[string]string)
 func TestMain(m *testing.M) {
 	var wg sync.WaitGroup
 
+	auth.Install(auth.NewAcceptAllModule())
+
 	wg.Add(1)
 	//starting proxy
 	go func() {
@@ -75,7 +79,7 @@ func TestMain(m *testing.M) {
 
 	//start 1st agents
 	//the first agent a1 should serve tunnel 7777:gw2:127.0.0.1:5555
-	tunnel := agent.NewTunnel(7777, "gw2", net.ParseIP("127.0.0.1"), 5555)
+	tunnel := agent.NewTunnel(7777, "gw2", "", net.ParseIP("127.0.0.1"), 5555)
 
 	gw1 := agent.NewAgent("ws://localhost:9999/", "gw1", "", nil)
 	gw1.Start(nil)
