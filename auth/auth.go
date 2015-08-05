@@ -20,7 +20,7 @@ type AuthorizationModule interface {
 	Connect(r ConnectionRequest) (bool, error)
 }
 
-var installedAuthorizationModule AuthorizationModule
+var installedAuthorizationModule AuthorizationModule = NewAcceptAllModule()
 
 // Use the specified authorization module for authorizing requests
 func Install(module AuthorizationModule) {
