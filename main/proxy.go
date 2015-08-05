@@ -22,7 +22,7 @@ func main() {
 	flag.StringVar(&listenAddr, "listen", ":8080", "Listining address")
 	flag.StringVar(&authLua, "authlua", "", "Lua authorization module")
 	flag.BoolVar(&authAcceptAll, "authgrant", false, "Grant all authorization requests")
-	flag.BoolVar(&authDeclineAll, "authdecline", false, "Decline all authorization requests (for debugging purposes)")
+	flag.BoolVar(&authDeclineAll, "authdeny", false, "Decline all authorization requests (for debugging purposes)")
 	flag.Parse()
 
 	printHelp := func() {
