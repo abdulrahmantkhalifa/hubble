@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/Jumpscale/hubble/agent"
+	"github.com/Jumpscale/hubble/auth"
 	"github.com/Jumpscale/hubble/proxy"
 )
 
@@ -55,6 +56,8 @@ var hashes = make(map[string]string)
 
 func TestMain(m *testing.M) {
 	var wg sync.WaitGroup
+
+	auth.Install(auth.NewAcceptAllModule())
 
 	wg.Add(1)
 	//starting proxy
