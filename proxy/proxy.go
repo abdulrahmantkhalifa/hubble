@@ -3,10 +3,11 @@ package proxy
 import (
 	"errors"
 	"fmt"
-	"github.com/Jumpscale/hubble"
-	"github.com/gorilla/websocket"
-	"log"
 	"net/http"
+
+	"github.com/Jumpscale/hubble"
+	"github.com/Jumpscale/hubble/logging"
+	"github.com/gorilla/websocket"
 )
 
 var invalidProtocolVersion = errors.New("Invalid protocol version")
@@ -19,7 +20,7 @@ var upgrader = websocket.Upgrader{
 
 func initiatorMessage(gw *gateway, message hubble.Message) {
 	initiator := message.(*hubble.InitiatorMessage)
-	log.Println("New Session", initiator)
+	logging.Println("New Session", initiator)
 	err := gw.openSession(initiator)
 	if err != nil {
 		//in case local session pipe starting failes, we send
@@ -31,7 +32,7 @@ func initiatorMessage(gw *gateway, message hubble.Message) {
 
 func connectionClosedMessage(gw *gateway, message hubble.Message) {
 	terminator := message.(*hubble.ConnectionClosedMessage)
-	log.Println("Ending Session:", gw, terminator)
+	logging.Println("Ending Session:", gw, terminator)
 	gw.closeSession(terminator)
 }
 
@@ -59,7 +60,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 	}
 
 	if message.GetMessageType() != hubble.HANDSHAKE_MESSAGE_TYPE {
-		log.Println(fmt.Sprintf("Expecting handshake message, got %v", message.GetMessageType()))
+		logging.Println(fmt.Sprintf("Expecting handshake message, got %v", message.GetMessageType()))
 		return
 	}
 
@@ -91,7 +92,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 			err := conn.Send(msgCap)
 			if err != nil {
-				log.Println("Failed to forward message to gateway:", gw)
+				logging.Println("Failed to forward message to gateway:", gw)
 			}
 		}
 	}()
@@ -105,7 +106,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 
 		msgHandler, ok := messageHandlers[message.GetMessageType()]
 		if !ok {
-			log.Println("Unknown message type:", message.GetMessageType())
+			logging.Println("Unknown message type:", message.GetMessageType())
 			continue
 		}
 
@@ -117,7 +118,7 @@ func handler(ws *websocket.Conn, request *http.Request) {
 func ProxyHandler(writer http.ResponseWriter, request *http.Request) {
 	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
-		log.Println(err)
+		logging.Println(err)
 		return
 	}
 

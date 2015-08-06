@@ -3,10 +3,10 @@ package proxy
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/Jumpscale/hubble"
 	"github.com/Jumpscale/hubble/auth"
+	"github.com/Jumpscale/hubble/logging"
 )
 
 const GatewayQueueSize = 512
@@ -48,14 +48,14 @@ func (gw *gateway) register() error {
 	//TODO:
 
 	//2- Registration
-	log.Println(fmt.Sprintf("Registering gateway: %v", gw.handshake.Name))
+	logging.Println(fmt.Sprintf("Registering gateway: %v", gw.handshake.Name))
 	gateways[gw.handshake.Name] = gw
 
 	return nil
 }
 
 func (gw *gateway) unregister() {
-	log.Println(fmt.Sprintf("Unegistering gateway: %v", gw.handshake.Name))
+	logging.Println(fmt.Sprintf("Unegistering gateway: %v", gw.handshake.Name))
 	close(gw.channel)
 
 	delete(gateways, gw.handshake.Name)
@@ -73,11 +73,11 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 		Key:      intiator.Key,
 	})
 	if err != nil {
-		log.Println("auth error:", err)
+		logging.Println("auth error:", err)
 		return errors.New("Authorization error.")
 	}
 	if !ok {
-		log.Println("Session authorization request declined")
+		logging.Println("Session authorization request declined")
 		return errors.New("Unauthorized")
 	}
 
