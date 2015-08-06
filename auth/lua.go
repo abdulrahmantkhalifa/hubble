@@ -11,19 +11,26 @@ import (
 )
 
 type luaAuthModule struct {
+	file   string
 	script string
 }
 
-func NewLuaModule(script string) (AuthorizationModule, error) {
-	if _, err := os.Stat(script); err != nil {
+func NewLuaModule(file string) (AuthorizationModule, error) {
+	if _, err := os.Stat(file); err != nil {
 		return nil, err
 	}
 
 	m := luaAuthModule{
-		script: script,
+		file: file,
 	}
 
 	return m, nil
+}
+
+func NewLuaModuleScript(script string) AuthorizationModule {
+	return luaAuthModule{
+		script: script,
+	}
 }
 
 func (auth luaAuthModule) Connect(r ConnectionRequest) (bool, error) {
@@ -35,7 +42,12 @@ func (auth luaAuthModule) Connect(r ConnectionRequest) (bool, error) {
 	json.Preload(l)
 	auth.registerConnectionRequestType(l)
 
-	err := l.DoFile(auth.script)
+	var err error
+	if auth.script != "" {
+		err = l.DoString(auth.script)
+	} else {
+		err = l.DoFile(auth.file)
+	}
 	if err != nil {
 		return false, err
 	}
