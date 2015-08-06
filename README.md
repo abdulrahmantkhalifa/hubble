@@ -22,16 +22,16 @@ For testing you still can run the proxy and the 2 agents on the same machine as 
 
 ### Running proxy
 ```sh
-cd $GOPATH/src/github.com/Jumpscale/hubble/main
-go run proxy.go
+cd $GOPATH/src/github.com/Jumpscale/hubble
+go run proxy/main/proxy.go
 ```
 
 By default proxy will start listing on port 8080. You can change that with the `-listen` option (ex: go run proxy.go -listen=127.0.0.1:80)
 
 ### Running agent1
 ```sh
-cd $GOPATH/src/github.com/Jumpscale/hubble/main
-go run agent.go -url=ws://localhost:8080 -name=agent1 2222:agent2:127.0.0.1:22
+cd $GOPATH/src/github.com/Jumpscale/hubble
+go run agent/main/agent.go -url=ws://localhost:8080 -name=agent1 2222:agent2:127.0.0.1:22
 ```
 
 The forwarding rule reads as "Listen on local port `2222` and forward connection to that port to over agent2 to machine 127.0.0.1:22 (in agent2 network)"
@@ -46,8 +46,8 @@ go run agent.go -url=ws://localhost:8080 -name=agnet1 2222:myconnectiontoken@age
 
 ### Running agent2
 ```sh
-cd $GOPATH/src/github.com/Jumpscale/hubble/main
-go run agent.go -url=ws://localhost:8080 -name=agent2
+cd $GOPATH/src/github.com/Jumpscale/hubble
+go run agent/main/agent.go -url=ws://localhost:8080 -name=agent2
 ```
 
 Note that agent2 doesn't define forwarding rules, which means it only accepts incoming traffic from the proxy. agent1 also accepts incoming traffic, but also allows outcoming traffic (on port 2222)
@@ -88,3 +88,11 @@ The `request` object has the following methods:
  - `request:key()`: the key specified in the connection handshake *(string)*
 
 A simple example using an HTTP request to authorize a connection can be found in [example.lua](auth/example.lua).
+
+# Testing
+Testing can be performed using the `go test` command
+
+```sh
+cd $GOPATH/src/github.com/Jumpscale/hubble
+go test ./...
+```
