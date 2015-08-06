@@ -88,3 +88,11 @@ The `request` object has the following methods:
  - `request:key()`: the key specified in the connection handshake *(string)*
 
 A simple example using an HTTP request to authorize a connection can be found in [example.lua](auth/example.lua).
+
+# Testing
+Testing can be performed using the `go test` command
+
+```sh
+cd $GOPATH/src/github.com/Jumpscale/hubble
+go test ./...
+```
