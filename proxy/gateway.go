@@ -3,10 +3,12 @@ package proxy
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Jumpscale/hubble"
 	"github.com/Jumpscale/hubble/auth"
 	"github.com/Jumpscale/hubble/logging"
+	"github.com/Jumpscale/hubble/proxy/events"
 )
 
 const GatewayQueueSize = 512
@@ -48,6 +50,11 @@ func (gw *gateway) register() error {
 	//TODO:
 
 	//2- Registration
+	logging.LogEvent(events.GatewayRegistrationEvent{
+		Time:    time.Now(),
+		Gateway: gw.handshake.Name,
+	})
+
 	logging.Println(fmt.Sprintf("Registering gateway: %v", gw.handshake.Name))
 	gateways[gw.handshake.Name] = gw
 
@@ -55,6 +62,10 @@ func (gw *gateway) register() error {
 }
 
 func (gw *gateway) unregister() {
+	logging.LogEvent(events.GatewayUnregistrationEvent{
+		Time:    time.Now(),
+		Gateway: gw.handshake.Name,
+	})
 	logging.Println(fmt.Sprintf("Unegistering gateway: %v", gw.handshake.Name))
 	close(gw.channel)
 
@@ -66,20 +77,42 @@ func (gw *gateway) unregister() {
 }
 
 func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
-	ok, err := auth.Connect(auth.ConnectionRequest{
+	req := auth.ConnectionRequest{
 		IP:       intiator.Ip,
 		Port:     intiator.Port,
 		Gatename: intiator.Gatename,
 		Key:      intiator.Key,
-	})
+	}
+	ok, err := auth.Connect(req)
 	if err != nil {
 		logging.Println("auth error:", err)
+		logging.LogEvent(events.OpenSessionEvent{
+			Time:              time.Now(),
+			SourceGateway:     gw.handshake.Name,
+			ConnectionRequest: req,
+			Success:           false,
+			Error:             "Authorziation error: " + err.Error(),
+		})
 		return errors.New("Authorization error.")
 	}
 	if !ok {
 		logging.Println("Session authorization request declined")
+		logging.LogEvent(events.OpenSessionEvent{
+			Time:              time.Now(),
+			SourceGateway:     gw.handshake.Name,
+			ConnectionRequest: req,
+			Success:           false,
+			Error:             "Unauthorized",
+		})
 		return errors.New("Unauthorized")
 	}
+
+	logging.LogEvent(events.OpenSessionEvent{
+		Time:              time.Now(),
+		SourceGateway:     gw.handshake.Name,
+		ConnectionRequest: req,
+		Success:           true,
+	})
 
 	endGw, ok := gateways[intiator.Gatename]
 	if !ok {
