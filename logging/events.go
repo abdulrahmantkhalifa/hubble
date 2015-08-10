@@ -21,7 +21,7 @@ func InstallEventLogger(logger EventLogger) {
 
 // LogEvent makes the currently installed event logger process the event.
 func LogEvent(event Event) error {
-	Print("Logging event:", event)
+	Printf("Logging event: %T%v", event, event)
 	err := eventLogger.Log(event)
 	if err != nil {
 		Print("Could not log event:", err)
