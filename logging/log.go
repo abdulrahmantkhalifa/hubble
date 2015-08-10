@@ -13,21 +13,21 @@ import (
 var DefaultLogger = log.New(os.Stdout, log.Prefix(), log.Flags())
 
 func Println(v ...interface{}) {
-	DefaultLogger.Println(v)
+	DefaultLogger.Println(v...)
 }
 
 func Print(v ...interface{}) {
-	DefaultLogger.Print(v)
+	DefaultLogger.Print(v...)
 }
 
 func Printf(format string, v ...interface{}) {
-	DefaultLogger.Printf(format, v)
+	DefaultLogger.Printf(format, v...)
 }
 
 func Fatal(v ...interface{}) {
-	DefaultLogger.Fatal(v)
+	DefaultLogger.Fatal(v...)
 }
 
 func Fatalf(format string, v ...interface{}) {
-	DefaultLogger.Fatalf(format, v)
+	DefaultLogger.Fatalf(format, v...)
 }
