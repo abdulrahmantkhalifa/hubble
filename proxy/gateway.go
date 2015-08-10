@@ -17,8 +17,9 @@ var unauthorized = errors.New("Unauthorized")
 var gatewayNotRegistered = errors.New("Gateway not registered")
 
 type terminal struct {
-	guid    string
-	gateway *gateway
+	guid          string
+	gateway       *gateway
+	connectionKey string
 }
 
 type gateway struct {
@@ -116,12 +117,14 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 	endTerm := new(terminal)
 	endTerm.guid = intiator.GUID
 	endTerm.gateway = endGw
+	endTerm.connectionKey = intiator.Key
 
 	gw.terminals[intiator.GUID] = endTerm
 
 	startTerm := new(terminal)
 	startTerm.guid = intiator.GUID
 	startTerm.gateway = gw
+	startTerm.connectionKey = intiator.Key
 
 	endGw.terminals[intiator.GUID] = startTerm
 
@@ -132,7 +135,13 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 
 func (gw *gateway) closeSession(terminator *hubble.ConnectionClosedMessage) {
 	terminal, ok := gw.terminals[terminator.GUID]
+
 	if ok {
+		logging.LogEvent(events.CloseSessionEvent{
+			Gateway:       gw.handshake.Name,
+			ConnectionKey: terminal.connectionKey,
+		})
+
 		//remove ref from this gateway terminals
 		delete(gw.terminals, terminator.GUID)
 		//remove ref from the other end terminals

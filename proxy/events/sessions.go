@@ -9,3 +9,8 @@ type OpenSessionEvent struct {
 	Success bool
 	Error   string
 }
+
+type CloseSessionEvent struct {
+	Gateway       string
+	ConnectionKey string
+}
