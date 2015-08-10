@@ -7,6 +7,12 @@ Hubble allows clients behind Firewalled natted networks to reach services behind
 firewalled natted services by proxying the traffic over websockets. Websockets are usually
 allowed to reach outside the natted network since they are http protocol.
 
+  - [How to use](#how-to-use)
+  - [Authorizing tunnels](#authorizing-tunnels)
+  - [Logging events](#logging-events)
+  - [Testing](#testing)
+
+
 # How to use
 To have a working setup you need to run the following:
 1- A proxy server, this one must be reachable from both natted networks (on the public internet)
@@ -88,6 +94,47 @@ The `request` object has the following methods:
  - `request:key()`: the key specified in the connection handshake *(string)*
 
 A simple example using an HTTP request to authorize a connection can be found in [example.lua](auth/example.lua).
+
+# Logging events
+To improve logging and enable auditing, Hubble can notify a custom event handler when certain events occur. To do so, your logger should implement the [`EventLogger`](logging/events.go) interface and install itself using the [`InstallEventHandler`](logging/events.go) function. The code snippet below shows an example as well as [all supported events](proxy/events). Specific event information is contained in the event structure.
+
+To enable logging you must include Hubble as a package and mimic Hubble's [`main` function](proxy/main/proxy.go).
+
+```go
+import (
+	"github.com/Jumpscale/hubble/logging"
+	"github.com/Jumpscale/hubble/proxy/events"
+)
+
+func main() {
+	logging.InstallEventHandler(Logger{})
+
+	// Initiate the Hubble proxy here.
+	// See the main function of the hubble proxy for more information.
+}
+
+type Logger struct{}
+
+func (Logger) Log(event logging.Event) error {
+	switch t := event.(type) {
+		case events.OpenSessionEvent:
+			// A new session was opened.
+			// (A new TCP connection is being forwarded.)
+
+		case events.CloseSessionEvent:
+			// A session was closed.
+			// (The TCP connection was closed.)
+
+		case events.GatewayRegistrationEvent:
+			// A gateway has registered itself.
+
+		case events.GatewayUnregistrationEvent:
+			// A gateway was disconnected from the proxy.
+	}
+
+	return nil
+}
+```
 
 # Testing
 Testing can be performed using the `go test` command
