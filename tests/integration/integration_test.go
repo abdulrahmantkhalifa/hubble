@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -18,12 +17,15 @@ import (
 	"github.com/Jumpscale/hubble/auth"
 	"github.com/Jumpscale/hubble/logging"
 	"github.com/Jumpscale/hubble/proxy"
+	"github.com/Jumpscale/hubble/proxy/events"
+	"github.com/stretchr/testify/assert"
 )
 
 const NUM_FILES int = 10
 const BLOCK_SIZE = 512 //KB
 const FILE_SIZE = 1    //M
 
+var eventLogger *testingEventLogger
 var proxyPort = uint16(0)
 var fileServerPort = uint16(0)
 var localTunnelPort = uint16(0)
@@ -66,7 +68,7 @@ func TestMain(m *testing.M) {
 
 	auth.Install(auth.NewAcceptAllModule())
 
-	eventLogger := &testingEventLogger{}
+	eventLogger = &testingEventLogger{}
 	logging.InstallEventLogger(eventLogger)
 
 	wg.Add(1)
@@ -125,7 +127,7 @@ func TestMain(m *testing.M) {
 
 	//start 1st agents
 	//the first agent a1 should serve tunnel (dynamic):gw2:127.0.0.1:(fileServerPort)
-	tunnel := agent.NewTunnel(0, "gw2", "", net.ParseIP("127.0.0.1"), fileServerPort)
+	tunnel := agent.NewTunnel(0, "gw2", "connection_key", net.ParseIP("127.0.0.1"), fileServerPort)
 	wsURL := fmt.Sprintf("ws://127.0.0.1:%d/", proxyPort)
 
 	gw1 := agent.NewAgent(wsURL, "gw1", "", nil)
@@ -164,14 +166,7 @@ func TestMain(m *testing.M) {
 		hashes[fname] = hash
 	}
 
-	exitCode := m.Run()
-
-	log.Println("EVENTS:")
-	for i, e := range eventLogger.events {
-		log.Printf("\t%d: %T%v", i, e, e)
-	}
-
-	os.Exit(exitCode)
+	os.Exit(m.Run())
 }
 
 //download a file and return its md5sum hash
@@ -226,6 +221,38 @@ func TestDownload(t *testing.T) {
 	}
 	t.Log("Waiting for downloads to finish")
 	downloadWg.Wait()
+
+	//check if events are triggered
+	e := eventLogger.events[0]
+	if registration, ok := e.(events.GatewayRegistrationEvent); true {
+		assert.True(t, ok, "Expected GatewayRegistrationEvent, got %T(%v)", e, e)
+		assert.Equal(t, registration.Gateway, "gw1", "Expected gw1 registration first.")
+	}
+
+	e = eventLogger.events[1]
+	if registration, ok := e.(events.GatewayRegistrationEvent); true {
+		assert.True(t, ok, "Expected GatewayRegistrationEvent, got %T(%v)", e, e)
+		assert.Equal(t, registration.Gateway, "gw2", "Expected gw2 registration first.")
+	}
+
+	for _, ev := range eventLogger.events[2:] {
+		switch e := ev.(type) {
+		case events.OpenSessionEvent:
+			assert.Equal(t, e.SourceGateway, "gw1", "Expected gw1 as source.")
+			assert.True(t, e.Success, "Expected open session success.")
+			assert.NotNil(t, e.Error, "Did not expect error: %v", e.Error)
+			assert.Equal(t, e.ConnectionRequest.IP.String(), "127.0.0.1", "Destination IP doesn't match.")
+			assert.Equal(t, e.ConnectionRequest.Gatename, "gw2", "Destination gateway doesn't match.")
+			assert.Equal(t, e.ConnectionRequest.Key, "connection_key", "Connection key doesn't match.")
+			assert.Equal(t, e.ConnectionRequest.Port, fileServerPort, "Local tunnel port doesn't match.")
+
+		case events.CloseSessionEvent:
+			if e.Gateway != "gw1" && e.Gateway != "gw2" {
+				assert.True(t, false, "Unknown closed session at gateway: %v", e.Gateway)
+			}
+			assert.Equal(t, e.ConnectionKey, "connection_key", "Connection key doesn't match.")
+		}
+	}
 }
 
 func BenchmarkDownload(b *testing.B) {
