@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/Jumpscale/hubble/agent"
 	"github.com/Jumpscale/hubble/auth"
+	"github.com/Jumpscale/hubble/logging"
 	"github.com/Jumpscale/hubble/proxy"
 )
 
@@ -58,6 +60,9 @@ func TestMain(m *testing.M) {
 	var wg sync.WaitGroup
 
 	auth.Install(auth.NewAcceptAllModule())
+
+	eventLogger := &testingEventLogger{}
+	logging.InstallEventLogger(eventLogger)
 
 	wg.Add(1)
 	//starting proxy
@@ -140,7 +145,14 @@ func TestMain(m *testing.M) {
 		hashes[fname] = hash
 	}
 
-	os.Exit(m.Run())
+	exitCode := m.Run()
+
+	log.Println("EVENTS:")
+	for i, e := range eventLogger.events {
+		log.Printf("\t%d: %T%v", i, e, e)
+	}
+
+	os.Exit(exitCode)
 }
 
 //download a file and return its md5sum hash
@@ -201,4 +213,16 @@ func BenchmarkDownload(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		download(fname)
 	}
+}
+
+type testingEventLogger struct {
+	eventsLock sync.Mutex
+	events     []logging.Event
+}
+
+func (logger *testingEventLogger) Log(event logging.Event) error {
+	logger.eventsLock.Lock()
+	logger.events = append(logger.events, event)
+	logger.eventsLock.Unlock()
+	return nil
 }
