@@ -3,9 +3,8 @@ package agent
 import (
 	"crypto/tls"
 	"errors"
-
 	"github.com/Jumpscale/hubble"
-	"github.com/Jumpscale/hubble/logging"
+	"log"
 )
 
 type OnExit func(Agent, error)
@@ -84,7 +83,7 @@ func (agent *agentImpl) dispatch(message hubble.SessionMessage) {
 
 	if !ok {
 		if message.GetMessageType() != hubble.TERMINATOR_MESSAGE_TYPE {
-			logging.Println("Message to unknow session received: ", message.GetGUID(), message.GetMessageType())
+			log.Println("Message to unknow session received: ", message.GetGUID(), message.GetMessageType())
 		}
 
 		return
@@ -115,7 +114,7 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 
 	go func() {
 		//receive all messages.
-		logging.Println("Start receiving loop")
+		log.Println("Start receiving loop")
 		err = nil
 		defer func() {
 			for _, tunnel := range agent.tunnels {
@@ -132,7 +131,7 @@ func (agent *agentImpl) Start(onExit OnExit) (err error) {
 			message, err = conn.Receive()
 			if err != nil {
 				//we should check error types to take a decistion. for now just exit
-				logging.Println("Receive loop failed", err)
+				log.Println("Receive loop failed", err)
 				return
 			}
 			switch message.GetMessageType() {

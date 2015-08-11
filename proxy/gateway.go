@@ -3,6 +3,7 @@ package proxy
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/Jumpscale/hubble"
 	"github.com/Jumpscale/hubble/auth"
@@ -54,7 +55,7 @@ func (gw *gateway) register() error {
 		Gateway: gw.handshake.Name,
 	})
 
-	logging.Println(fmt.Sprintf("Registering gateway: %v", gw.handshake.Name))
+	log.Println(fmt.Sprintf("Registering gateway: %v", gw.handshake.Name))
 	gateways[gw.handshake.Name] = gw
 
 	return nil
@@ -64,7 +65,7 @@ func (gw *gateway) unregister() {
 	logging.LogEvent(events.GatewayUnregistrationEvent{
 		Gateway: gw.handshake.Name,
 	})
-	logging.Println(fmt.Sprintf("Unegistering gateway: %v", gw.handshake.Name))
+	log.Println(fmt.Sprintf("Unegistering gateway: %v", gw.handshake.Name))
 	close(gw.channel)
 
 	delete(gateways, gw.handshake.Name)
@@ -83,7 +84,7 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 	}
 	ok, err := auth.Connect(req)
 	if err != nil {
-		logging.Println("auth error:", err)
+		log.Println("auth error:", err)
 		logging.LogEvent(events.OpenSessionEvent{
 			SourceGateway:     gw.handshake.Name,
 			ConnectionRequest: req,
@@ -93,7 +94,7 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 		return errors.New("Authorization error.")
 	}
 	if !ok {
-		logging.Println("Session authorization request declined")
+		log.Println("Session authorization request declined")
 		logging.LogEvent(events.OpenSessionEvent{
 			SourceGateway:     gw.handshake.Name,
 			ConnectionRequest: req,

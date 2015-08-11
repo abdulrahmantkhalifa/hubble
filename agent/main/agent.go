@@ -6,13 +6,13 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/Jumpscale/hubble/agent"
-	"github.com/Jumpscale/hubble/logging"
 )
 
 func main() {
@@ -50,17 +50,17 @@ func main() {
 		match := re.FindStringSubmatch(tunnel_def)
 		ip := net.ParseIP(match[4])
 		if ip == nil {
-			logging.Fatalf("Invalid ip address %v", match[4])
+			log.Fatalf("Invalid ip address %v", match[4])
 		}
 
 		local, err := strconv.ParseUint(match[1], 10, 16)
 		if err != nil {
-			logging.Fatalf("Invalid port %v", match[1])
+			log.Fatalf("Invalid port %v", match[1])
 		}
 
 		remote, err := strconv.ParseUint(match[5], 10, 16)
 		if err != nil {
-			logging.Fatalf("Invalid port %v", match[5])
+			log.Fatalf("Invalid port %v", match[5])
 		}
 
 		key := match[2]
@@ -76,12 +76,12 @@ func main() {
 
 	if url == "" {
 		printHelp()
-		logging.Fatal("Missing url")
+		log.Fatal("Missing url")
 	}
 
 	if name == "" {
 		printHelp()
-		logging.Fatal("Missing name")
+		log.Fatal("Missing name")
 	}
 
 	var config tls.Config
@@ -89,7 +89,7 @@ func main() {
 	if ca != "" {
 		pem, err := ioutil.ReadFile(ca)
 		if err != nil {
-			logging.Fatal(err)
+			log.Fatal(err)
 		}
 
 		config.RootCAs = x509.NewCertPool()

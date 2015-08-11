@@ -2,13 +2,13 @@ package agent
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"strconv"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/Jumpscale/hubble"
-	"github.com/Jumpscale/hubble/logging"
 )
 
 type Tunnel struct {
@@ -55,11 +55,11 @@ func (tunnel *Tunnel) String() string {
 
 //Open the tunnel on local side and server over the given connection to the proxy.
 func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) error {
-	logging.Println("Starting tunnel", tunnel)
+	log.Println("Starting tunnel", tunnel)
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", tunnel.local))
 
 	if err != nil {
-		logging.Printf("Failed to listing on port %v: %v\n", tunnel.local, err)
+		log.Printf("Failed to listing on port %v: %v\n", tunnel.local, err)
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 		if _, port, err := net.SplitHostPort(addr); err == nil {
 			if i, err := strconv.ParseUint(port, 10, 16); err == nil {
 				tunnel.local = uint16(i)
-				logging.Println("Listening on dynamic port", tunnel.local)
+				log.Println("Listening on dynamic port", tunnel.local)
 			}
 		}
 	}
@@ -85,7 +85,7 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 				select {
 				case ctrl <- 1:
 				case <-time.After(5 * time.Second):
-					logging.Println("All tunnel sessions are terminated")
+					log.Println("All tunnel sessions are terminated")
 					return
 				}
 			}
@@ -94,7 +94,7 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 		for {
 			socket, err := listener.Accept()
 			if err != nil {
-				logging.Println("Tunnel", tunnel, "closed", err)
+				log.Println("Tunnel", tunnel, "closed", err)
 				return
 			}
 
@@ -106,7 +106,7 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 }
 
 func (tunnel *Tunnel) stop() {
-	logging.Println("Terminating tunnel", tunnel)
+	log.Println("Terminating tunnel", tunnel)
 	tunnel.listener.Close()
 }
 
@@ -114,7 +114,7 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	guid := uuid.New()
 
 	defer func() {
-		logging.Printf("Session %v on tunnel %v terminated\n", guid, tunnel)
+		log.Printf("Session %v on tunnel %v terminated\n", guid, tunnel)
 		socket.Close()
 	}()
 
@@ -122,24 +122,24 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	defer unregisterSession(sessions, guid)
 
 	//1- send initiator message ...
-	logging.Printf("Starting session %v on tunnel %v", guid, tunnel)
+	log.Printf("Starting session %v on tunnel %v", guid, tunnel)
 
 	err := conn.Send(hubble.NewInitiatorMessage(guid,
 		tunnel.ip, tunnel.remote, tunnel.gateway, tunnel.key))
 
 	if err != nil {
-		logging.Printf("Failed to start session %v to %v: %v\n", guid, tunnel, err)
+		log.Printf("Failed to start session %v to %v: %v\n", guid, tunnel, err)
 		return
 	}
 
 	//read first message. must be ack.
 
 	//2- recieve ack
-	logging.Println("Waiting for ack from:", tunnel.gateway)
+	log.Println("Waiting for ack from:", tunnel.gateway)
 	select {
 	case message, ok := <-channel:
 		if !ok || message.GetMessageType() != hubble.ACK_MESSAGE_TYPE {
-			logging.Println("Expecting ack message, got: ", message.GetMessageType())
+			log.Println("Expecting ack message, got: ", message.GetMessageType())
 			return
 		}
 
@@ -156,7 +156,7 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 		return
 	}
 
-	logging.Printf("Session %v started...", guid)
+	log.Printf("Session %v started...", guid)
 
 	serveSession(guid, conn, channel, socket, ctrl)
 }

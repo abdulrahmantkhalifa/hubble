@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/Jumpscale/hubble/auth"
-	"github.com/Jumpscale/hubble/logging"
 	"github.com/Jumpscale/hubble/proxy"
 )
 
@@ -41,7 +41,7 @@ func main() {
 	} else if authLua != "" {
 		m, err := auth.NewLuaModule(authLua)
 		if err != nil {
-			logging.Println("Cannot install Lua authorization module:", err)
+			log.Println("Cannot install Lua authorization module:", err)
 			os.Exit(1)
 		}
 
@@ -49,12 +49,12 @@ func main() {
 
 	} else {
 		if !authAcceptAll {
-			logging.Println("Warning, no authorization module specified, will",
+			log.Println("Warning, no authorization module specified, will",
 				"grant all authorization requests")
 		}
 		auth.Install(auth.NewAcceptAllModule())
 	}
-	logging.Println("Start listing on", listenAddr)
+	log.Println("Start listing on", listenAddr)
 	http.HandleFunc("/", proxy.ProxyHandler)
-	logging.Fatal(http.ListenAndServe(listenAddr, nil))
+	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }

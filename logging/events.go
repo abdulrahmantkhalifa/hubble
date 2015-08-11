@@ -1,5 +1,7 @@
 package logging
 
+import "log"
+
 type Event interface{}
 
 // EventLogger is an interface that accepts events. You can make your types
@@ -21,10 +23,10 @@ func InstallEventLogger(logger EventLogger) {
 
 // LogEvent makes the currently installed event logger process the event.
 func LogEvent(event Event) error {
-	Printf("Logging event: %T%v", event, event)
+	log.Printf("Logging event: %T%v", event, event)
 	err := eventLogger.Log(event)
 	if err != nil {
-		Print("Could not log event:", err)
+		log.Print("Could not log event:", err)
 	}
 	return err
 }

@@ -2,12 +2,11 @@ package agent
 
 import (
 	"fmt"
+	"github.com/Jumpscale/hubble"
 	"io"
+	"log"
 	"net"
 	"sync"
-
-	"github.com/Jumpscale/hubble"
-	"github.com/Jumpscale/hubble/logging"
 )
 
 type sessionChannel chan hubble.Message
@@ -28,13 +27,13 @@ func unregisterSession(sessions sessionsStore, guid string) {
 }
 
 func startLocalSession(sessions sessionsStore, conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
-	logging.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
+	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
 	go func() {
 		//make local connection
 		socket, err := net.Dial("tcp", fmt.Sprintf("%s:%d", initiator.Ip, initiator.Port))
 		conn.SendAckOrError(initiator.GUID, err)
 		if err != nil {
-			logging.Println(err)
+			log.Println(err)
 			return
 		}
 
@@ -48,7 +47,7 @@ func startLocalSession(sessions sessionsStore, conn *hubble.Connection, initiato
 }
 
 func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, socket net.Conn, ctrl ctrlChan) {
-	logging.Println("Starting routines for session", guid)
+	log.Println("Starting routines for session", guid)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -75,7 +74,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 		for {
 			count, read_err := socket.Read(buffer)
 			if read_err != nil && read_err != io.EOF {
-				//logging.Printf("Failer on session %v %v: %v", guid, tunnel, read_err)
+				//log.Printf("Failer on session %v %v: %v", guid, tunnel, read_err)
 				return
 			}
 
@@ -84,7 +83,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 
 			if err != nil {
 				//failed to forward data to proxy
-				logging.Println(err)
+				log.Println(err)
 				return
 			}
 
@@ -115,7 +114,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 				if message.GetMessageType() == hubble.DATA_MESSAGE_TYPE {
 					data := message.(*hubble.DataMessage)
 					if lastOrder+1 != data.Order {
-						logging.Println("Data out of order")
+						log.Println("Data out of order")
 						socket.Close()
 						return
 					}
@@ -126,7 +125,7 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 					for written < len(data.Data) {
 						count, err := socket.Write(data.Data[written:])
 						if err != nil {
-							logging.Println(err)
+							log.Println(err)
 							return
 						}
 
@@ -141,5 +140,5 @@ func serveSession(guid string, conn *hubble.Connection, channel sessionChannel, 
 	}()
 
 	wg.Wait()
-	logging.Printf("Session '%v' routines terminates", guid)
+	log.Printf("Session '%v' routines terminates", guid)
 }
