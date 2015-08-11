@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -22,6 +23,10 @@ import (
 const NUM_FILES int = 10
 const BLOCK_SIZE = 512 //KB
 const FILE_SIZE = 1    //M
+
+var proxyPort = uint16(0)
+var fileServerPort = uint16(0)
+var localTunnelPort = uint16(0)
 
 func md5sum_r(reader io.Reader) (string, error) {
 	md5 := md5.New()
@@ -70,11 +75,17 @@ func TestMain(m *testing.M) {
 		defer wg.Done()
 
 		http.HandleFunc("/", proxy.ProxyHandler)
-		listner, err := net.Listen("tcp", ":9999")
+		listner, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
 			fmt.Println(err)
 
 		}
+
+		proxyPort, err = portForListener(listner)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		go http.Serve(listner, nil)
 
 	}()
@@ -82,20 +93,7 @@ func TestMain(m *testing.M) {
 	//wait until proxy is ready before starting agents.
 	wg.Wait()
 
-	//start 1st agents
-	//the first agent a1 should serve tunnel 7777:gw2:127.0.0.1:5555
-	tunnel := agent.NewTunnel(7777, "gw2", "", net.ParseIP("127.0.0.1"), 5555)
-
-	gw1 := agent.NewAgent("ws://localhost:9999/", "gw1", "", nil)
-	gw1.Start(nil)
-
-	gw1.AddTunnel(tunnel)
-
-	//start second agent
-	gw2 := agent.NewAgent("ws://localhost:9999/", "gw2", "", nil)
-	gw2.Start(nil)
-
-	//now we need to start a file server that serves on port 5555
+	//now we need to start a file server that serves some files
 	tempdir := fmt.Sprintf("%s/%s", os.TempDir(), "hubble_t")
 	err := os.MkdirAll(tempdir, os.ModeDir|os.ModePerm)
 	if err != nil {
@@ -109,15 +107,36 @@ func TestMain(m *testing.M) {
 
 	go func() {
 		defer wg.Done()
-		listner, err := net.Listen("tcp", ":5555")
+		listner, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
+		fileServerPort, err = portForListener(listner)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		go http.Serve(listner, http.FileServer(http.Dir(tempdir)))
 	}()
 
 	wg.Wait()
+
+	//start 1st agents
+	//the first agent a1 should serve tunnel (dynamic):gw2:127.0.0.1:(fileServerPort)
+	tunnel := agent.NewTunnel(0, "gw2", "", net.ParseIP("127.0.0.1"), fileServerPort)
+	wsURL := fmt.Sprintf("ws://127.0.0.1:%d/", proxyPort)
+
+	gw1 := agent.NewAgent(wsURL, "gw1", "", nil)
+	gw1.Start(nil)
+
+	gw1.AddTunnel(tunnel)
+	localTunnelPort = tunnel.Local()
+
+	//start second agent
+	gw2 := agent.NewAgent(wsURL, "gw2", "", nil)
+	gw2.Start(nil)
 
 	//Create files to serve.
 	for i := 0; i < NUM_FILES; i++ {
@@ -158,7 +177,8 @@ func TestMain(m *testing.M) {
 //download a file and return its md5sum hash
 func download(fname string) (hash string, err error) {
 	//we go over the forwarded port of course
-	response, err := http.Get(fmt.Sprintf("http://localhost:7777/%s", fname))
+	localURL := fmt.Sprintf("http://127.0.0.1:%d/%s", localTunnelPort, fname)
+	response, err := http.Get(localURL)
 	if err != nil {
 		return
 	}
@@ -225,4 +245,19 @@ func (logger *testingEventLogger) Log(event logging.Event) error {
 	logger.events = append(logger.events, event)
 	logger.eventsLock.Unlock()
 	return nil
+}
+
+func portForListener(l net.Listener) (port uint16, err error) {
+	_, s, err := net.SplitHostPort(l.Addr().String())
+	if err != nil {
+		return
+	}
+
+	i, err := strconv.ParseUint(s, 10, 16)
+	if err != nil {
+		return
+	}
+
+	port = uint16(i)
+	return
 }
