@@ -7,6 +7,8 @@ import (
 
 	"github.com/Jumpscale/hubble"
 	"github.com/Jumpscale/hubble/auth"
+	"github.com/Jumpscale/hubble/logging"
+	"github.com/Jumpscale/hubble/proxy/events"
 )
 
 const GatewayQueueSize = 512
@@ -16,8 +18,9 @@ var unauthorized = errors.New("Unauthorized")
 var gatewayNotRegistered = errors.New("Gateway not registered")
 
 type terminal struct {
-	guid    string
-	gateway *gateway
+	guid          string
+	gateway       *gateway
+	connectionKey string
 }
 
 type gateway struct {
@@ -48,6 +51,10 @@ func (gw *gateway) register() error {
 	//TODO:
 
 	//2- Registration
+	logging.LogEvent(events.GatewayRegistrationEvent{
+		Gateway: gw.handshake.Name,
+	})
+
 	log.Println(fmt.Sprintf("Registering gateway: %v", gw.handshake.Name))
 	gateways[gw.handshake.Name] = gw
 
@@ -55,6 +62,9 @@ func (gw *gateway) register() error {
 }
 
 func (gw *gateway) unregister() {
+	logging.LogEvent(events.GatewayUnregistrationEvent{
+		Gateway: gw.handshake.Name,
+	})
 	log.Println(fmt.Sprintf("Unegistering gateway: %v", gw.handshake.Name))
 	close(gw.channel)
 
@@ -66,20 +76,39 @@ func (gw *gateway) unregister() {
 }
 
 func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
-	ok, err := auth.Connect(auth.ConnectionRequest{
+	req := auth.ConnectionRequest{
 		IP:       intiator.Ip,
 		Port:     intiator.Port,
 		Gatename: intiator.Gatename,
 		Key:      intiator.Key,
-	})
+	}
+	ok, err := auth.Connect(req)
 	if err != nil {
 		log.Println("auth error:", err)
+		logging.LogEvent(events.OpenSessionEvent{
+			SourceGateway:     gw.handshake.Name,
+			ConnectionRequest: req,
+			Success:           false,
+			Error:             "Authorziation error: " + err.Error(),
+		})
 		return errors.New("Authorization error.")
 	}
 	if !ok {
 		log.Println("Session authorization request declined")
+		logging.LogEvent(events.OpenSessionEvent{
+			SourceGateway:     gw.handshake.Name,
+			ConnectionRequest: req,
+			Success:           false,
+			Error:             "Unauthorized",
+		})
 		return errors.New("Unauthorized")
 	}
+
+	logging.LogEvent(events.OpenSessionEvent{
+		SourceGateway:     gw.handshake.Name,
+		ConnectionRequest: req,
+		Success:           true,
+	})
 
 	endGw, ok := gateways[intiator.Gatename]
 	if !ok {
@@ -89,12 +118,14 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 	endTerm := new(terminal)
 	endTerm.guid = intiator.GUID
 	endTerm.gateway = endGw
+	endTerm.connectionKey = intiator.Key
 
 	gw.terminals[intiator.GUID] = endTerm
 
 	startTerm := new(terminal)
 	startTerm.guid = intiator.GUID
 	startTerm.gateway = gw
+	startTerm.connectionKey = intiator.Key
 
 	endGw.terminals[intiator.GUID] = startTerm
 
@@ -105,7 +136,13 @@ func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 
 func (gw *gateway) closeSession(terminator *hubble.ConnectionClosedMessage) {
 	terminal, ok := gw.terminals[terminator.GUID]
+
 	if ok {
+		logging.LogEvent(events.CloseSessionEvent{
+			Gateway:       gw.handshake.Name,
+			ConnectionKey: terminal.connectionKey,
+		})
+
 		//remove ref from this gateway terminals
 		delete(gw.terminals, terminator.GUID)
 		//remove ref from the other end terminals
