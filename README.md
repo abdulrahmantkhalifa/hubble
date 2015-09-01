@@ -4,7 +4,7 @@ Hubble
 ======
 
 Hubble allows clients behind firewalled natted networks to reach services behind different
-firewalled natted services by proxying the traffic over websockets. Since websockets implemented on the http protocol, they are usually allowed to reach outside the natted network even when there is an http proxy configured.
+firewalled natted services by proxying the traffic over websockets. Since websockets are implemented on the http protocol, they are usually allowed to reach outside the natted network even when there is an http proxy configured.
 
   - [How to use](#how-to-use)
   - [Authorizing tunnels](#authorizing-tunnels)
@@ -22,7 +22,7 @@ Steps:
 go get github.com/Jumpscale/hubble
 ```
 
-## Demo environemt
+## Demo environment
 For testing you still can run the proxy and the 2 agents on the same machine as following
 
 ### Running the proxy
@@ -31,7 +31,7 @@ cd $GOPATH/src/github.com/Jumpscale/hubble
 go run proxy/main/proxy.go
 ```
 
-By default the proxy will start listing on port 8080. You can change that with the `-listen` option (ex: go run proxy.go -listen=127.0.0.1:80)
+By default the proxy will start listening on port 8080. You can change that with the `-listen` option (ex: go run proxy.go -listen=127.0.0.1:80)
 
 ### Running agent1
 ```sh
@@ -39,12 +39,12 @@ cd $GOPATH/src/github.com/Jumpscale/hubble
 go run agent/main/agent.go -url=ws://localhost:8080 -name=agent1 2222:agent2:127.0.0.1:22
 ```
 
-The forwarding rule reads as "Listen on local port `2222` and forward connection to that port to over agent2 to machine 127.0.0.1:22 (in agent2 network)"
+The forwarding rule reads as "Listen on local port `2222` and forward connections to that port over agent2 to machine 127.0.0.1:22 (in agent2 network)"
 You can add as many forwarding rules as you want
 
 If you want the application to dynamically choose an unused local port to listen on, you may specify `0` as the local port. The application will log the actual chosen port to the console.
 
-If you have enabled authorization you might have to specify a key to open a tunnel. This key has to be specified on the command line.
+If you have enabled authorization, you might have to specify a key to open a tunnel. This key has to be specified on the command line.
 ```sh
 go run agent.go -url=ws://localhost:8080 -name=agnet1 2222:myconnectiontoken@agent2:127.0.0.1:22
 ```
@@ -55,7 +55,7 @@ cd $GOPATH/src/github.com/Jumpscale/hubble
 go run agent/main/agent.go -url=ws://localhost:8080 -name=agent2
 ```
 
-Note that agent2 doesn't define forwarding rules, which means it only accepts incoming traffic from the proxy. agent1 also accepts incoming traffic, but also allows outgoing traffic (on port 2222)
+Note that agent2 does not define forwarding rules, which means it only accepts incoming traffic from the proxy. agent1 accepts incoming traffic but also allows outgoing traffic (on port 2222)
 
 ### Testing the setup
 Simply do:
@@ -136,7 +136,7 @@ func (Logger) Log(event logging.Event) error {
 ```
 
 # Testing
-Testing can be performed using the `go test` command
+Run the tests using the `go test` command
 
 ```sh
 cd $GOPATH/src/github.com/Jumpscale/hubble
