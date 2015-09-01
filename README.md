@@ -3,9 +3,8 @@
 Hubble
 ======
 
-Hubble allows clients behind Firewalled natted networks to reach services behind different
-firewalled natted services by proxying the traffic over websockets. Websockets are usually
-allowed to reach outside the natted network since they are http protocol.
+Hubble allows clients behind firewalled natted networks to reach services behind different
+firewalled natted services by proxying the traffic over websockets. Since websockets implemented on the http protocol, they are usually allowed to reach outside the natted network even when there is an http proxy configured.
 
   - [How to use](#how-to-use)
   - [Authorizing tunnels](#authorizing-tunnels)
@@ -26,13 +25,13 @@ go get github.com/Jumpscale/hubble
 ## Demo environemt
 For testing you still can run the proxy and the 2 agents on the same machine as following
 
-### Running proxy
+### Running the proxy
 ```sh
 cd $GOPATH/src/github.com/Jumpscale/hubble
 go run proxy/main/proxy.go
 ```
 
-By default proxy will start listing on port 8080. You can change that with the `-listen` option (ex: go run proxy.go -listen=127.0.0.1:80)
+By default the proxy will start listing on port 8080. You can change that with the `-listen` option (ex: go run proxy.go -listen=127.0.0.1:80)
 
 ### Running agent1
 ```sh
@@ -56,7 +55,7 @@ cd $GOPATH/src/github.com/Jumpscale/hubble
 go run agent/main/agent.go -url=ws://localhost:8080 -name=agent2
 ```
 
-Note that agent2 doesn't define forwarding rules, which means it only accepts incoming traffic from the proxy. agent1 also accepts incoming traffic, but also allows outcoming traffic (on port 2222)
+Note that agent2 doesn't define forwarding rules, which means it only accepts incoming traffic from the proxy. agent1 also accepts incoming traffic, but also allows outgoing traffic (on port 2222)
 
 ### Testing the setup
 Simply do:
