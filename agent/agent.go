@@ -2,7 +2,6 @@ package agent
 
 import (
 	"crypto/tls"
-	"errors"
 	"github.com/Jumpscale/hubble"
 	"log"
 )
@@ -166,21 +165,18 @@ func (agent *agentImpl) Stop() (err error) {
 }
 
 func (agent *agentImpl) AddTunnel(tunnel *Tunnel) error {
-	if agent.conn == nil {
-		return errors.New("Can't add tunnel to a stopped agent")
-	}
-
 	if _, ok := agent.tunnels[tunnel.String()]; ok {
 		//not re-adding tunnel
 		return nil
 	}
 
-	err := tunnel.start(agent.sessions, agent.conn)
-	if err == nil {
-		agent.tunnels[tunnel.String()] = tunnel
+	agent.tunnels[tunnel.String()] = tunnel
+
+	if agent.conn != nil {
+		return tunnel.start(agent.sessions, agent.conn)
 	}
 
-	return err
+	return nil
 }
 
 func (agent *agentImpl) RemoveTunnel(tunnel *Tunnel) {
