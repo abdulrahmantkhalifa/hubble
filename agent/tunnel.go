@@ -107,7 +107,9 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 
 func (tunnel *Tunnel) stop() {
 	log.Println("Terminating tunnel", tunnel)
-	tunnel.listener.Close()
+	if tunnel.listener != nil {
+		tunnel.listener.Close()
+	}
 }
 
 func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, socket net.Conn, ctrl ctrlChan) {
