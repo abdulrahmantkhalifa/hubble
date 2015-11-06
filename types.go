@@ -3,7 +3,6 @@ package hubble
 import (
 	"errors"
 	"fmt"
-	"net"
 )
 
 type MessageType uint8
@@ -19,7 +18,7 @@ const CONNECTION_CLOSED_MESSAGE_TYPE MessageType = 5
 
 const ACK_MESSAGE_TYPE MessageType = 255
 
-var unknownMessageType = errors.New("Unknow message type")
+var unknownMessageType = errors.New("Unknown message type")
 
 //Agent level messages
 type Message interface {
@@ -54,10 +53,10 @@ func (msg *HandshakeMessage) GetMessageType() MessageType {
 //Initiator message
 type InitiatorMessage struct {
 	GuidMessage
-	Ip       net.IP
-	Port     uint16
-	Gatename string
-	Key      string
+	RemoteHost string
+	RemotePort uint16
+	Gatename   string
+	Key        string
 }
 
 func (msg *InitiatorMessage) GetMessageType() MessageType {
@@ -103,9 +102,9 @@ func (msg *AckMessage) GetMessageType() MessageType {
 
 func (msg *InitiatorMessage) String() string {
 	if msg.Key == "" {
-		return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.Ip, msg.Port, msg.GUID)
+		return fmt.Sprintf("%v->%v:%v id(%v)", msg.Gatename, msg.RemoteHost, msg.RemotePort, msg.GUID)
 	} else {
-		return fmt.Sprintf("%v@%v->%v:%v id(%v)", msg.Key, msg.Gatename, msg.Ip, msg.Port, msg.GUID)
+		return fmt.Sprintf("%v@%v->%v:%v id(%v)", msg.Key, msg.Gatename, msg.RemoteHost, msg.RemotePort, msg.GUID)
 	}
 }
 
@@ -121,11 +120,11 @@ func NewHandshakeMessage(name string, key string) *HandshakeMessage {
 	}
 }
 
-func NewInitiatorMessage(guid string, ip net.IP, port uint16, gatename, key string) *InitiatorMessage {
+func NewInitiatorMessage(guid string, remotehost string, remoteport uint16, gatename, key string) *InitiatorMessage {
 	return &InitiatorMessage{
 		GuidMessage: GuidMessage{guid},
-		Ip:          ip,
-		Port:        port,
+		RemoteHost:  remotehost,
+		RemotePort:  remoteport,
 		Gatename:    gatename,
 		Key:         key,
 	}

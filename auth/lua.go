@@ -99,7 +99,7 @@ func (auth luaAuthModule) connectionRequestGetIP(l *lua.LState) int {
 	if !ok {
 		return 0
 	}
-	l.Push(lua.LString(r.IP.String()))
+	l.Push(lua.LString(r.RemoteHost))
 	return 1
 }
 
@@ -108,7 +108,7 @@ func (auth luaAuthModule) connectionRequestGetPort(l *lua.LState) int {
 	if !ok {
 		return 0
 	}
-	l.Push(lua.LNumber(r.Port))
+	l.Push(lua.LNumber(r.RemotePort))
 	return 1
 }
 

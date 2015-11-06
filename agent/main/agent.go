@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"regexp"
 	"strconv"
 	"time"
@@ -48,17 +47,14 @@ func main() {
 
 	for _, tunnel_def := range tunnels_def {
 		match := re.FindStringSubmatch(tunnel_def)
-		ip := net.ParseIP(match[4])
-		if ip == nil {
-			log.Fatalf("Invalid ip address %v", match[4])
-		}
+		remotehost := match[4]
 
 		local, err := strconv.ParseUint(match[1], 10, 16)
 		if err != nil {
 			log.Fatalf("Invalid port %v", match[1])
 		}
 
-		remote, err := strconv.ParseUint(match[5], 10, 16)
+		remoteport, err := strconv.ParseUint(match[5], 10, 16)
 		if err != nil {
 			log.Fatalf("Invalid port %v", match[5])
 		}
@@ -70,7 +66,7 @@ func main() {
 
 		gw := match[3]
 
-		tunnel := agent.NewTunnel(uint16(local), gw, key, ip, uint16(remote))
+		tunnel := agent.NewTunnel(uint16(local), gw, key, remotehost, uint16(remoteport))
 		tunnels = append(tunnels, tunnel)
 	}
 

@@ -77,10 +77,10 @@ func (gw *gateway) unregister() {
 
 func (gw *gateway) openSession(intiator *hubble.InitiatorMessage) error {
 	req := auth.ConnectionRequest{
-		IP:       intiator.Ip,
-		Port:     intiator.Port,
-		Gatename: intiator.Gatename,
-		Key:      intiator.Key,
+		RemoteHost: intiator.RemoteHost,
+		RemotePort: intiator.RemotePort,
+		Gatename:   intiator.Gatename,
+		Key:        intiator.Key,
 	}
 	ok, err := auth.Connect(req)
 	if err != nil {

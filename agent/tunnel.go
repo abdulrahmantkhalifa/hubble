@@ -12,23 +12,23 @@ import (
 )
 
 type Tunnel struct {
-	local    uint16
-	ip       net.IP
-	remote   uint16
-	gateway  string
-	key      string
-	listener net.Listener
+	local      uint16
+	remotehost string
+	remoteport uint16
+	gateway    string
+	key        string
+	listener   net.Listener
 }
 
 type ctrlChan chan int
 
-func NewTunnel(local uint16, gateway, key string, ip net.IP, remote uint16) *Tunnel {
+func NewTunnel(local uint16, gateway, key, remotehost string, remoteport uint16) *Tunnel {
 	tunnel := new(Tunnel)
 	tunnel.local = local
-	tunnel.ip = ip
+	tunnel.remotehost = remotehost
 	tunnel.gateway = gateway
 	tunnel.key = key
-	tunnel.remote = remote
+	tunnel.remoteport = remoteport
 
 	return tunnel
 }
@@ -37,20 +37,20 @@ func (tunnel *Tunnel) Local() uint16 {
 	return tunnel.local
 }
 
-func (tunnel *Tunnel) IP() net.IP {
-	return tunnel.ip
+func (tunnel *Tunnel) Host() string {
+	return tunnel.remotehost
 }
 
 func (tunnel *Tunnel) Gateway() string {
 	return tunnel.gateway
 }
 
-func (tunnel *Tunnel) Remote() uint16 {
-	return tunnel.remote
+func (tunnel *Tunnel) RemotePort() uint16 {
+	return tunnel.remoteport
 }
 
 func (tunnel *Tunnel) String() string {
-	return fmt.Sprintf("%v:%v:%v:%v", tunnel.local, tunnel.gateway, tunnel.ip, tunnel.remote)
+	return fmt.Sprintf("%v:%v:%v:%v", tunnel.local, tunnel.gateway, tunnel.remotehost, tunnel.remoteport)
 }
 
 //Open the tunnel on local side and server over the given connection to the proxy.
@@ -127,7 +127,7 @@ func (tunnel *Tunnel) handle(sessions sessionsStore, conn *hubble.Connection, so
 	log.Printf("Starting session %v on tunnel %v", guid, tunnel)
 
 	err := conn.Send(hubble.NewInitiatorMessage(guid,
-		tunnel.ip, tunnel.remote, tunnel.gateway, tunnel.key))
+		tunnel.remotehost, tunnel.remoteport, tunnel.gateway, tunnel.key))
 
 	if err != nil {
 		log.Printf("Failed to start session %v to %v: %v\n", guid, tunnel, err)

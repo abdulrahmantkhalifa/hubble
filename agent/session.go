@@ -2,11 +2,12 @@ package agent
 
 import (
 	"fmt"
-	"github.com/Jumpscale/hubble"
 	"io"
 	"log"
 	"net"
 	"sync"
+
+	"github.com/Jumpscale/hubble"
 )
 
 type sessionChannel chan hubble.Message
@@ -27,10 +28,10 @@ func unregisterSession(sessions sessionsStore, guid string) {
 }
 
 func startLocalSession(sessions sessionsStore, conn *hubble.Connection, initiator *hubble.InitiatorMessage) {
-	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.Ip, initiator.Port)
+	log.Printf("Starting local session: (%v) %v:%v", initiator.GUID, initiator.RemoteHost, initiator.RemotePort)
 	go func() {
 		//make local connection
-		socket, err := net.Dial("tcp", fmt.Sprintf("%s:%d", initiator.Ip, initiator.Port))
+		socket, err := net.Dial("tcp", fmt.Sprintf("%s:%d", initiator.RemoteHost, initiator.RemotePort))
 		conn.SendAckOrError(initiator.GUID, err)
 		if err != nil {
 			log.Println(err)

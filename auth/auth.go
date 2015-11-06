@@ -1,17 +1,14 @@
 package auth
 
-import (
-	"errors"
-	"net"
-)
+import "errors"
 
 // ConnectionRequest holds information about a client that wants to open a
 // tunnel to the specified destination.
 type ConnectionRequest struct {
-	IP       net.IP // Destination IP address.
-	Port     uint16 // Destination port
-	Gatename string // Destination gate
-	Key      string // Authorization key
+	RemoteHost string // Destination host
+	RemotePort uint16 // Destination port
+	Gatename   string // Destination gate
+	Key        string // Authorization key
 }
 
 // An AuthorizationModule should accept or decline an authorization request.
