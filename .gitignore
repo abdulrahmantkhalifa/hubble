@@ -25,4 +25,4 @@ _testmain.go
 
 # Vim
 .*.sw[a-z]
-Godeps/_workspace
+_workspace/

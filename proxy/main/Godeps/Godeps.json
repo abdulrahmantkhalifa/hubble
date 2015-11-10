@@ -1,0 +1,26 @@
+{
+	"ImportPath": "github.com/Jumpscale/hubble/proxy/main",
+	"GoVersion": "go1.4.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/cjoudrey/gluahttp",
+			"Rev": "1128ce320b775e8e3fa2b8095b9c2116aa6869db"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Rev": "39cd638460acf1c01aaac38effc6e54ee7e04bca"
+		},
+		{
+			"ImportPath": "github.com/layeh/gopher-json",
+			"Rev": "bb1ff6467afab1f0ffee68113a256ce7435b578b"
+		},
+		{
+			"ImportPath": "github.com/ugorji/go/codec",
+			"Rev": "1d5269ed4e89d423d40362a0914e1c99adb13cc8"
+		},
+		{
+			"ImportPath": "github.com/yuin/gopher-lua",
+			"Rev": "ae75ff57e4677bbd787adc57f47635e6bcefcfca"
+		}
+	]
+}
