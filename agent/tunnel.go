@@ -59,7 +59,7 @@ func (tunnel *Tunnel) start(sessions sessionsStore, conn *hubble.Connection) err
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", tunnel.local))
 
 	if err != nil {
-		log.Printf("Failed to listing on port %v: %v\n", tunnel.local, err)
+		log.Printf("Failed to listen on port %v: %v\n", tunnel.local, err)
 		return err
 	}
 
