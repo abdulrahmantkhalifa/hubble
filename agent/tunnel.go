@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/Jumpscale/hubble"
+	"github.com/pborman/uuid"
 )
 
 type Tunnel struct {
