@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Jumpscale/hubble/agent"
+	"github.com/g8os/hubble/agent"
 )
 
 func main() {

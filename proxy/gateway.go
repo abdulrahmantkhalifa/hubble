@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Jumpscale/hubble"
-	"github.com/Jumpscale/hubble/auth"
-	"github.com/Jumpscale/hubble/logging"
-	"github.com/Jumpscale/hubble/proxy/events"
+	"github.com/g8os/hubble"
+	"github.com/g8os/hubble/auth"
+	"github.com/g8os/hubble/logging"
+	"github.com/g8os/hubble/proxy/events"
 )
 
 const GatewayQueueSize = 512

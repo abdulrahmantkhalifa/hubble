@@ -13,11 +13,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Jumpscale/hubble/agent"
-	"github.com/Jumpscale/hubble/auth"
-	"github.com/Jumpscale/hubble/logging"
-	"github.com/Jumpscale/hubble/proxy"
-	"github.com/Jumpscale/hubble/proxy/events"
+	"github.com/g8os/hubble/agent"
+	"github.com/g8os/hubble/auth"
+	"github.com/g8os/hubble/logging"
+	"github.com/g8os/hubble/proxy"
+	"github.com/g8os/hubble/proxy/events"
 	"github.com/stretchr/testify/assert"
 )
 

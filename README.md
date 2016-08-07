@@ -19,7 +19,7 @@ To have a working setup you need to run the following:
 
 Steps:
 ```sh
-go get github.com/Jumpscale/hubble
+go get github.com/g8os/hubble
 ```
 
 ## Demo environment
@@ -27,7 +27,7 @@ For testing you still can run the proxy and the 2 agents on the same machine as 
 
 ### Running the proxy
 ```sh
-cd $GOPATH/src/github.com/Jumpscale/hubble
+cd $GOPATH/src/github.com/g8os/hubble
 go run proxy/main/proxy.go
 ```
 
@@ -35,7 +35,7 @@ By default the proxy will start listening on port 8080. You can change that with
 
 ### Running agent1
 ```sh
-cd $GOPATH/src/github.com/Jumpscale/hubble
+cd $GOPATH/src/github.com/g8os/hubble
 go run agent/main/agent.go -url=ws://localhost:8080 -name=agent1 2222:agent2:127.0.0.1:22
 ```
 
@@ -51,7 +51,7 @@ go run agent.go -url=ws://localhost:8080 -name=agnet1 2222:myconnectiontoken@age
 
 ### Running agent2
 ```sh
-cd $GOPATH/src/github.com/Jumpscale/hubble
+cd $GOPATH/src/github.com/g8os/hubble
 go run agent/main/agent.go -url=ws://localhost:8080 -name=agent2
 ```
 
@@ -101,8 +101,8 @@ To enable logging you must include Hubble as a package and mimic Hubble's [`main
 
 ```go
 import (
-	"github.com/Jumpscale/hubble/logging"
-	"github.com/Jumpscale/hubble/proxy/events"
+	"github.com/g8os/hubble/logging"
+	"github.com/g8os/hubble/proxy/events"
 )
 
 func main() {
@@ -139,6 +139,6 @@ func (Logger) Log(event logging.Event) error {
 Run the tests using the `go test` command
 
 ```sh
-cd $GOPATH/src/github.com/Jumpscale/hubble
+cd $GOPATH/src/github.com/g8os/hubble
 go test ./...
 ```

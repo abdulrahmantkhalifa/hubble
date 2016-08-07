@@ -7,7 +7,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/Jumpscale/hubble"
+	"github.com/g8os/hubble"
 )
 
 type sessionChannel chan hubble.Message

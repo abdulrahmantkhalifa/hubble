@@ -2,7 +2,7 @@ package agent
 
 import (
 	"crypto/tls"
-	"github.com/Jumpscale/hubble"
+	"github.com/g8os/hubble"
 	"log"
 )
 

@@ -3,7 +3,7 @@ package proxy
 import (
 	"errors"
 	"fmt"
-	"github.com/Jumpscale/hubble"
+	"github.com/g8os/hubble"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"

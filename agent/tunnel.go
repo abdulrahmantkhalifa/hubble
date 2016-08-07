@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Jumpscale/hubble"
+	"github.com/g8os/hubble"
 	"github.com/pborman/uuid"
 )
 

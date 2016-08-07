@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Jumpscale/hubble/auth"
-	"github.com/Jumpscale/hubble/proxy"
+	"github.com/g8os/hubble/auth"
+	"github.com/g8os/hubble/proxy"
 )
 
 func main() {

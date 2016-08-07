@@ -1,6 +1,6 @@
 package events
 
-import "github.com/Jumpscale/hubble/auth"
+import "github.com/g8os/hubble/auth"
 
 type OpenSessionEvent struct {
 	SourceGateway     string
